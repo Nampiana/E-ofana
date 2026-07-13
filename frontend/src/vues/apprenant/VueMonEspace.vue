@@ -1,359 +1,425 @@
 <template>
-  <div class="mon-espace-container">
-    <div class="espace-header">
-      <div class="container">
-        <div class="user-welcome">
-          <div class="avatar-section">
-            <div class="avatar">{{ initials }}</div>
+  <div class="apprenant-space">
+    <section class="hero">
+      <div class="avatar">{{ initials }}</div>
+
+      <div>
+        <h1>Bienvenue, {{ displayName }} !</h1>
+        <p>Gérez votre espace apprenant</p>
+
+        <div class="hero-actions">
+          <button @click="goAccueil">
+            <i class="bi bi-house-door"></i>
+            Accueil
+          </button>
+
+          <button @click="goRecherche">
+            <i class="bi bi-search"></i>
+            Recherche
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="space-body">
+      <aside class="sidebar">
+        <button
+          class="menu-item"
+          :class="{ active: activeTab === 'overview' }"
+          @click="activeTab = 'overview'"
+        >
+          <i class="bi bi-grid-fill"></i>
+          Vue d'ensemble
+        </button>
+
+        <button
+          class="menu-item"
+          :class="{ active: activeTab === 'inscriptions' }"
+          @click="activeTab = 'inscriptions'"
+        >
+          <i class="bi bi-card-checklist"></i>
+          Mes inscriptions
+        </button>
+
+        <button
+          class="menu-item"
+          :class="{ active: activeTab === 'recus' }"
+          @click="activeTab = 'recus'"
+        >
+          <i class="bi bi-receipt"></i>
+          Mes reçus
+        </button>
+
+        <button
+          class="menu-item"
+          :class="{ active: activeTab === 'courses' }"
+          @click="activeTab = 'courses'"
+        >
+          <i class="bi bi-book-fill"></i>
+          Mes formations
+        </button>
+
+        <button
+          class="menu-item"
+          :class="{ active: activeTab === 'certificates' }"
+          @click="activeTab = 'certificates'"
+        >
+          <i class="bi bi-award-fill"></i>
+          Certificats
+        </button>
+
+        <button
+          class="menu-item"
+          :class="{ active: activeTab === 'profile' }"
+          @click="activeTab = 'profile'"
+        >
+          <i class="bi bi-person-gear"></i>
+          Mon profil
+        </button>
+
+        <button
+          class="menu-item"
+          :class="{ active: activeTab === 'settings' }"
+          @click="activeTab = 'settings'"
+        >
+          <i class="bi bi-gear-fill"></i>
+          Paramètres
+        </button>
+
+        <hr />
+
+        <button class="logout-btn" @click="logout">
+          <i class="bi bi-box-arrow-right"></i>
+          Déconnexion
+        </button>
+      </aside>
+
+      <main class="content">
+        <div v-if="loading" class="content-card">
+          Chargement...
+        </div>
+
+        <div v-else-if="apiError" class="content-card error-box">
+          {{ apiError }}
+        </div>
+
+        <!-- Vue d'ensemble -->
+        <div v-else-if="activeTab === 'overview'" class="content-card">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon black">
+                <i class="bi bi-book-fill"></i>
+              </div>
+
+              <div>
+                <h3>{{ stats.formationsEnCours }}</h3>
+                <p>Formations en cours</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon green">
+                <i class="bi bi-check-circle-fill"></i>
+              </div>
+
+              <div>
+                <h3>{{ stats.formationsTerminees }}</h3>
+                <p>Formations terminées</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon gold">
+                <i class="bi bi-award-fill"></i>
+              </div>
+
+              <div>
+                <h3>{{ stats.certificats }}</h3>
+                <p>Certificats obtenus</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon gray">
+                <i class="bi bi-clock-fill"></i>
+              </div>
+
+              <div>
+                <h3>{{ stats.tempsFormation }}</h3>
+                <p>Temps de formation</p>
+              </div>
+            </div>
           </div>
-          <div class="welcome-text">
-            <h1 class="welcome-title">Bienvenue, {{ displayName }} !</h1>
-            <p class="welcome-subtitle">Gérez votre espace apprenant</p>
-            <div class="welcome-actions">
-              <router-link to="/" class="btn btn-light btn-sm">
-                <i class="bi bi-house-door me-1"></i>
-                Accueil
-              </router-link>
-              <router-link to="/recherche" class="btn btn-outline-light btn-sm">
-                <i class="bi bi-search me-1"></i>
-                Recherche
-              </router-link>
+
+          <h2 class="section-title">
+            <i class="bi bi-clock-history"></i>
+            Activité récente
+          </h2>
+
+          <div v-if="inscriptions.length === 0" class="empty-state">
+            <h3>Aucune activité récente</h3>
+            <p>Vos activités apparaîtront ici après une inscription.</p>
+          </div>
+
+          <div v-else class="activity-list">
+            <div
+              v-for="inscription in inscriptions.slice(0, 3)"
+              :key="inscription.id"
+              class="activity-item"
+            >
+              <div class="activity-icon">
+                <i class="bi bi-play-circle-fill"></i>
+              </div>
+
+              <div class="activity-content">
+                <h4>{{ inscription.formation }}</h4>
+                <p>{{ formatDate(inscription.date) }} • {{ getStatusLabel(inscription.statut) }}</p>
+              </div>
+
+              <div class="activity-progress">
+                <div class="progress">
+                  <div
+                    class="progress-bar"
+                    :style="{ width: `${inscription.progression || 0}%` }"
+                  ></div>
+                </div>
+
+                <small>{{ inscription.progression || 0 }}%</small>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="espace-content">
-      <div class="container">
-        <ul class="nav nav-tabs" id="espaceTabs" role="tablist">
-          <li class="nav-item" role="presentation">
-            <button
-              class="nav-link"
-              :class="{ active: activeTab === 'inscriptions' }"
-              @click="activeTab = 'inscriptions'"
-              type="button"
-            >
-              <i class="bi bi-book-fill me-2"></i>
-              Mes inscriptions
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button
-              class="nav-link"
-              :class="{ active: activeTab === 'recus' }"
-              @click="activeTab = 'recus'"
-              type="button"
-            >
-              <i class="bi bi-receipt me-2"></i>
-              Mes reçus
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button
-              class="nav-link"
-              :class="{ active: activeTab === 'profil' }"
-              @click="activeTab = 'profil'"
-              type="button"
-            >
-              <i class="bi bi-person-gear me-2"></i>
-              Mon profil
-            </button>
-          </li>
-        </ul>
+        <!-- Mes inscriptions -->
+        <div v-else-if="activeTab === 'inscriptions'" class="content-card">
+          <h2 class="section-title">
+            <i class="bi bi-card-checklist"></i>
+            Mes inscriptions
+          </h2>
 
-        <div class="tab-content">
-          <!-- Onglet Mes inscriptions -->
-          <div v-show="activeTab === 'inscriptions'" class="tab-pane fade show">
-            <div class="content-section">
-              <div v-if="loadingInscriptions" class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Chargement...</span>
-                </div>
-              </div>
-
-              <div v-else-if="inscriptions.length === 0" class="no-results">
-                <div class="no-results-icon">
-                  <i class="bi bi-book"></i>
-                </div>
-                <h3>Aucune inscription</h3>
-                <p>Vous n'êtes inscrit à aucune formation pour le moment</p>
-                <router-link to="/recherche" class="btn btn-primary">
-                  <i class="bi bi-search me-2"></i>
-                  Rechercher une formation
-                </router-link>
-              </div>
-
-              <div v-else>
-                <div class="table-responsive">
-                  <table class="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Formation</th>
-                        <th>Date</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="ins in inscriptions" :key="ins.id">
-                        <td>
-                          <div class="formation-name">{{ ins.formation }}</div>
-                          <small class="text-muted">{{ ins.ecole }}</small>
-                        </td>
-                        <td>{{ formatDate(ins.date) }}</td>
-                        <td>
-                          <span class="badge" :class="getStatusClass(ins.statut)">
-                            {{ getStatusLabel(ins.statut) }}
-                          </span>
-                        </td>
-                        <td>
-                          <div class="btn-group">
-                            <button
-                              class="btn btn-sm btn-outline-primary"
-                              @click="viewDetails(ins)"
-                              title="Voir détails"
-                            >
-                              <i class="bi bi-eye"></i>
-                            </button>
-                            <button
-                              v-if="ins.paiement_confirme"
-                              class="btn btn-sm btn-outline-success"
-                              @click="downloadRecu(ins)"
-                              title="Télécharger reçu"
-                            >
-                              <i class="bi bi-download"></i>
-                            </button>
-                            <button
-                              v-if="ins.statut !== 'termine'"
-                              class="btn btn-sm btn-outline-danger"
-                              @click="confirmCancel(ins)"
-                              title="Annuler"
-                            >
-                              <i class="bi bi-x-lg"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+          <div v-if="inscriptions.length === 0" class="empty-state">
+            <h3>Aucune inscription</h3>
+            <p>Vos inscriptions apparaîtront ici.</p>
           </div>
 
-          <!-- Onglet Mes reçus -->
-          <div v-show="activeTab === 'recus'" class="tab-pane fade show">
-            <div class="content-section">
-              <div class="filters-bar mb-4">
-                <div class="row g-3">
-                  <div class="col-md-4">
-                    <select class="form-select" v-model="recuFilters.formation">
-                  <option value="">Toutes les formations</option>
-                  <option v-for="formation in uniqueFormations" :key="formation" :value="formation">
-                    {{ formation }}
-                  </option>
-                </select>
+          <table v-else class="data-table">
+            <thead>
+              <tr>
+                <th>Formation</th>
+                <th>Date</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr v-for="inscription in inscriptions" :key="inscription.id">
+                <td>
+                  <strong>{{ inscription.formation }}</strong>
+                  <br />
+                  <small>{{ inscription.centre }}</small>
+                </td>
+
+                <td>{{ formatDate(inscription.date) }}</td>
+
+                <td>
+                  <span class="badge" :class="getStatusClass(inscription.statut)">
+                    {{ getStatusLabel(inscription.statut) }}
+                  </span>
+                </td>
+
+                <td>
+                  <button class="small-btn" @click="viewDetails(inscription)">
+                    <i class="bi bi-eye"></i>
+                  </button>
+
+                  <button
+                    v-if="inscription.numeroRecu"
+                    class="small-btn success"
+                    @click="downloadRecu(inscription)"
+                  >
+                    <i class="bi bi-download"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mes reçus -->
+        <div v-else-if="activeTab === 'recus'" class="content-card">
+          <h2 class="section-title">
+            <i class="bi bi-receipt"></i>
+            Mes reçus
+          </h2>
+
+          <div v-if="recus.length === 0" class="empty-state">
+            <h3>Aucun reçu disponible</h3>
+            <p>Vos reçus apparaîtront ici après un paiement.</p>
+          </div>
+
+          <table v-else class="data-table">
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Formation</th>
+                <th>Date</th>
+                <th>Montant</th>
+                <th>Méthode</th>
+                <th>Statut</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr v-for="recu in recus" :key="recu.id">
+                <td class="reference">{{ recu.reference }}</td>
+                <td>{{ recu.formation }}</td>
+                <td>{{ formatDate(recu.date) }}</td>
+                <td>
+                  <strong>{{ formatPrice(recu.montant) }} Ar</strong>
+                </td>
+                <td>{{ recu.methode }}</td>
+                <td>
+                  <span class="badge" :class="getStatusClass(recu.statut)">
+                    {{ getStatusLabel(recu.statut) }}
+                  </span>
+                </td>
+                <td>
+                  <button class="download-btn" @click="downloadRecu(recu)">
+                    <i class="bi bi-download"></i>
+                    Télécharger
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mes formations -->
+        <div v-else-if="activeTab === 'courses'" class="content-card">
+          <h2 class="section-title">
+            <i class="bi bi-book-fill"></i>
+            Mes formations
+          </h2>
+
+          <div v-if="inscriptions.length === 0" class="empty-state">
+            <h3>Aucune formation suivie</h3>
+            <p>Vos formations apparaîtront ici après une inscription.</p>
+          </div>
+
+          <div v-else class="courses-grid">
+            <div
+              v-for="inscription in inscriptions"
+              :key="inscription.id"
+              class="course-card"
+            >
+              <div class="course-image">
+                <span>{{ inscription.categorie }}</span>
               </div>
-              <div class="col-md-4">
-                <input type="date" class="form-control" v-model="recuFilters.date" />
-              </div>
-              <div class="col-md-4">
-                <button class="btn btn-outline-secondary w-100" @click="resetRecuFilters">
-                  <i class="bi bi-arrow-counterclockwise me-2"></i>
-                  Réinitialiser
+
+              <div class="course-content">
+                <h3>{{ inscription.formation }}</h3>
+
+                <p>{{ inscription.description || 'Formation suivie sur E-OFANA' }}</p>
+
+                <div class="course-meta">
+                  <span>
+                    <i class="bi bi-clock"></i>
+                    {{ inscription.duree || 'Durée non définie' }}
+                  </span>
+
+                  <span>
+                    <i class="bi bi-geo-alt"></i>
+                    {{ inscription.lieu || inscription.ville || 'Lieu non défini' }}
+                  </span>
+                </div>
+
+                <div class="progress">
+                  <div
+                    class="progress-bar"
+                    :style="{ width: `${inscription.progression || 0}%` }"
+                  ></div>
+                </div>
+
+                <p>{{ inscription.progression || 0 }}% complété</p>
+
+                <button class="continue-btn" @click="viewDetails(inscription)">
+                  Continuer
                 </button>
               </div>
-                </div>
-              </div>
-
-              <div v-if="loadingRecus" class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Chargement...</span>
-                </div>
-              </div>
-
-              <div v-else-if="filteredRecus.length === 0" class="no-results">
-                <div class="no-results-icon">
-                  <i class="bi bi-receipt"></i>
-                </div>
-                <h3>Aucun reçu trouvé</h3>
-                <p>Aucun reçu ne correspond à vos critères</p>
-              </div>
-
-              <div v-else>
-                <div class="table-responsive">
-                  <table class="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Référence</th>
-                        <th>Formation</th>
-                        <th>Date</th>
-                        <th>Montant</th>
-                        <th>Méthode</th>
-                        <th>Statut</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="recu in filteredRecus" :key="recu.id">
-                        <td><code>{{ recu.reference }}</code></td>
-                        <td>{{ recu.formation }}</td>
-                        <td>{{ formatDate(recu.date) }}</td>
-                        <td class="fw-bold">{{ formatPrice(recu.montant) }} Ar</td>
-                        <td>{{ recu.methode }}</td>
-                        <td>
-                          <span class="badge" :class="recu.statut === 'paye' ? 'bg-success' : 'bg-warning'">
-                            {{ recu.statut === 'paye' ? 'Payé' : 'En attente' }}
-                          </span>
-                        </td>
-                        <td>
-                          <button
-                            class="btn btn-sm btn-primary"
-                            :disabled="recu.statut !== 'paye'"
-                            @click="downloadRecu(recu)"
-                          >
-                            <i class="bi bi-download me-1"></i>
-                            Télécharger
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Onglet Mon profil -->
-          <div v-show="activeTab === 'profil'" class="tab-pane fade show">
-            <div class="content-section">
-              <div v-if="loadingProfile" class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Chargement...</span>
-                </div>
-              </div>
-
-              <div v-else>
-                <div v-if="!editing" class="profile-display">
-                  <div class="row">
-                    <div class="col-md-6 mb-3">
-                      <label class="form-label">Prénom</label>
-                      <div class="form-control-plaintext">{{ authStore.user?.prenom || '—' }}</div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                      <label class="form-label">Nom</label>
-                      <div class="form-control-plaintext">{{ authStore.user?.nom || '—' }}</div>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-md-6 mb-3">
-                      <label class="form-label">Email</label>
-                      <div class="form-control-plaintext">{{ authStore.user?.email || '—' }}</div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                      <label class="form-label">Téléphone</label>
-                      <div class="form-control-plaintext">{{ authStore.user?.telephone || 'Non renseigné' }}</div>
-                    </div>
-                  </div>
-                  <button class="btn btn-primary" @click="toggleEdit">
-                    <i class="bi bi-pencil me-2"></i>
-                    Modifier
-                  </button>
-                </div>
-
-                <div v-else class="profile-edit">
-                  <form @submit.prevent="saveProfile">
-                    <div class="row">
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Prénom *</label>
-                        <input
-                          type="text"
-                          class="form-control"
-                          v-model="editForm.prenom"
-                          :class="{ 'is-invalid': errors.prenom }"
-                        />
-                        <div class="invalid-feedback" v-if="errors.prenom">{{ errors.prenom }}</div>
-                      </div>
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Nom *</label>
-                        <input
-                          type="text"
-                          class="form-control"
-                          v-model="editForm.nom"
-                          :class="{ 'is-invalid': errors.nom }"
-                        />
-                        <div class="invalid-feedback" v-if="errors.nom">{{ errors.nom }}</div>
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Email</label>
-                        <input
-                          type="email"
-                          class="form-control"
-                          :value="authStore.user?.email"
-                          disabled
-                        />
-                        <small class="form-text text-muted">L'email ne peut pas être modifié</small>
-                      </div>
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Téléphone</label>
-                        <input
-                          type="tel"
-                          class="form-control"
-                          v-model="editForm.telephone"
-                          placeholder="+261 34 00 000 00"
-                        />
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Nouveau mot de passe</label>
-                        <input
-                          type="password"
-                          class="form-control"
-                          v-model="editForm.password"
-                          placeholder="Laisser vide pour conserver"
-                          :class="{ 'is-invalid': errors.password }"
-                        />
-                        <div class="invalid-feedback" v-if="errors.password">{{ errors.password }}</div>
-                      </div>
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Confirmer le mot de passe</label>
-                        <input
-                          type="password"
-                          class="form-control"
-                          v-model="editForm.confirmPassword"
-                          placeholder="Confirmer"
-                          :class="{ 'is-invalid': errors.confirmPassword }"
-                        />
-                        <div class="invalid-feedback" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</div>
-                      </div>
-                    </div>
-
-                    <div v-if="apiError" class="alert alert-danger">{{ apiError }}</div>
-
-                    <div class="form-actions">
-                      <button type="submit" class="btn btn-primary" :disabled="submitting">
-                        <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
-                        <i v-else class="bi bi-check-lg me-2"></i>
-                        Enregistrer
-                      </button>
-                      <button type="button" class="btn btn-outline-secondary" @click="toggleEdit">
-                        Annuler
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+
+        <!-- Certificats -->
+        <div v-else-if="activeTab === 'certificates'" class="content-card">
+          <h2 class="section-title">
+            <i class="bi bi-award-fill"></i>
+            Mes certificats
+          </h2>
+
+          <div class="empty-state">
+            <h3>Aucun certificat disponible</h3>
+            <p>Vos certificats apparaîtront ici après avoir terminé une formation.</p>
+          </div>
+        </div>
+
+        <!-- Profil -->
+        <div v-else-if="activeTab === 'profile'" class="content-card">
+          <h2 class="section-title">
+            <i class="bi bi-person-gear"></i>
+            Mon profil
+          </h2>
+
+          <div class="profile-box">
+            <p><strong>Nom :</strong> {{ displayName }}</p>
+            <p><strong>Membre depuis :</strong> {{ memberSince }}</p>
+            <p><strong>Total inscriptions :</strong> {{ totalInscriptions }}</p>
+            <p><strong>Total reçus :</strong> {{ totalRecus }}</p>
+          </div>
+        </div>
+
+        <!-- Paramètres -->
+        <div v-else-if="activeTab === 'settings'" class="content-card">
+          <h2 class="section-title">
+            <i class="bi bi-gear-fill"></i>
+            Paramètres
+          </h2>
+
+          <div class="settings-box">
+            <div class="setting-row">
+              <div>
+                <h3>Notifications par email</h3>
+                <p>Recevoir des notifications sur votre progression</p>
+              </div>
+              <input type="checkbox" checked />
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <h3>Mode sombre</h3>
+                <p>Activer le thème sombre</p>
+              </div>
+              <input type="checkbox" />
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <h3>Langue</h3>
+                <p>Choisir la langue de l'interface</p>
+              </div>
+              <select>
+                <option>Français</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </main>
+    </section>
   </div>
 </template>
+
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -365,19 +431,18 @@ import {
   telechargerRecuApprenant
 } from '../../api/apprenantEspace'
 
+console.log('✅ MON ESPACE APPRENANT CHARGÉ')
+
+
+
+const activeTab = ref('overview')
 const router = useRouter()
 const authStore = useAuthStore()
-
-const activeTab = ref('inscriptions')
-const editing = ref(false)
-const submitting = ref(false)
+const loading = ref(false)
 const apiError = ref('')
 
-const loadingInscriptions = ref(false)
-const loadingRecus = ref(false)
-const loadingProfile = ref(false)
-
-const errors = ref({})
+const inscriptions = ref([])
+const recus = ref([])
 
 const stats = ref({
   totalInscriptions: 0,
@@ -388,26 +453,8 @@ const stats = ref({
   totalPaye: 0
 })
 
-const editForm = ref({
-  prenom: authStore.user?.prenom || '',
-  nom: authStore.user?.nom || '',
-  telephone: authStore.user?.telephone || '',
-  password: '',
-  confirmPassword: ''
-})
-
-const recuFilters = ref({
-  formation: '',
-  date: ''
-})
-
-const inscriptions = ref([])
-const recus = ref([])
-
 const getUtilisateurConnecte = () => {
-  if (authStore.user) {
-    return authStore.user
-  }
+  if (authStore.user) return authStore.user
 
   const auth = localStorage.getItem('auth')
   const utilisateur = localStorage.getItem('utilisateur')
@@ -417,7 +464,7 @@ const getUtilisateurConnecte = () => {
       const parsed = JSON.parse(auth)
       if (parsed?.user) return parsed.user
     } catch (error) {
-      console.error('Erreur lecture auth localStorage', error)
+      console.error('Erreur lecture auth', error)
     }
   }
 
@@ -425,7 +472,7 @@ const getUtilisateurConnecte = () => {
     try {
       return JSON.parse(utilisateur)
     } catch (error) {
-      console.error('Erreur lecture utilisateur localStorage', error)
+      console.error('Erreur lecture utilisateur', error)
     }
   }
 
@@ -449,52 +496,48 @@ const getIdUser = () => {
 }
 
 const initials = computed(() => {
-  const p = authStore.user?.prenom || ''
-  const n = authStore.user?.nom || ''
+  const utilisateur = getUtilisateurConnecte()
 
-  if (p && n) return (p[0] + n[0]).toUpperCase()
-  if (authStore.user?.email) return authStore.user.email[0].toUpperCase()
+  const prenom = utilisateur?.prenom || ''
+  const nom = utilisateur?.nom || ''
+
+  if (prenom && nom) return `${prenom[0]}${nom[0]}`.toUpperCase()
+  if (utilisateur?.email) return utilisateur.email[0].toUpperCase()
 
   return 'U'
 })
 
 const displayName = computed(() => {
-  const p = authStore.user?.prenom || ''
-  const n = authStore.user?.nom || ''
+  const utilisateur = getUtilisateurConnecte()
 
-  if (p && n) return p + ' ' + n
+  const prenom = utilisateur?.prenom || ''
+  const nom = utilisateur?.nom || ''
 
-  return authStore.user?.email?.split('@')[0] || 'Utilisateur'
+  if (prenom && nom) return `${prenom} ${nom}`
+
+  return utilisateur?.email?.split('@')[0] || 'Utilisateur'
 })
 
-const uniqueFormations = computed(() => {
-  return [...new Set(recus.value.map((recu) => recu.formation))]
+const memberSince = computed(() => {
+  const utilisateur = getUtilisateurConnecte()
+
+  if (utilisateur?.createdAt) {
+    return formatDate(utilisateur.createdAt)
+  }
+
+  return '2026'
 })
 
-const filteredRecus = computed(() => {
-  return recus.value.filter((recu) => {
-    if (recuFilters.value.formation && recu.formation !== recuFilters.value.formation) {
-      return false
-    }
-
-    if (recuFilters.value.date) {
-      const recuDate = toInputDate(recu.date)
-      if (recuDate !== recuFilters.value.date) return false
-    }
-
-    return true
-  })
+const enCours = computed(() => {
+  return inscriptions.value.filter((item) => item.statut !== 'termine' && item.statut !== 'annule')
 })
 
-const toInputDate = (date) => {
-  if (!date) return ''
+const termine = computed(() => {
+  return inscriptions.value.filter((item) => item.statut === 'termine')
+})
 
-  const d = new Date(date)
-
-  if (Number.isNaN(d.getTime())) return ''
-
-  return d.toISOString().slice(0, 10)
-}
+const totalInscriptions = computed(() => inscriptions.value.length)
+const totalRecus = computed(() => recus.value.length)
 
 const normaliserInscription = (item) => {
   const statutOriginal = String(item.statut || item.statutOriginal || '').toLowerCase()
@@ -515,17 +558,35 @@ const normaliserInscription = (item) => {
     id: item.idInscription || item.id,
     idInscription: item.idInscription || item.id,
     idFormation: item.idFormation,
+
     formation: item.formation || item.titre || 'Formation',
+    titre: item.formation || item.titre || 'Formation',
+
     ecole: item.ecole || item.centre || 'Centre',
     centre: item.centre || item.ecole || 'Centre',
+
     categorie: item.categorie || 'Formation',
+    description: item.description || '',
+    lieu: item.lieu || item.ville || '',
+    ville: item.ville || item.lieu || '',
+
     date: item.date || item.createdAt || item.dateDebut,
+    dateDebut: item.dateDebut,
+    dateFin: item.dateFin,
+
     statut,
+    statutOriginal: item.statutOriginal || item.statut,
+
     paiement_confirme: statut !== 'enAttente',
+
     progression: Number(item.progression || 0),
+
     prix: Number(item.montantPaye || item.montant || item.prix || 0),
     montant: Number(item.montantPaye || item.montant || item.prix || 0),
+    montantPaye: Number(item.montantPaye || item.montant || 0),
+
     duree: item.duree || '',
+
     numeroRecu: item.numeroRecu,
     operateur: item.operateur,
     transactionId: item.transactionId
@@ -535,7 +596,7 @@ const normaliserInscription = (item) => {
 const normaliserRecu = (item) => {
   const statutOriginal = String(item.statut || item.statutOriginal || '').toLowerCase()
 
-  let statut = 'en_attente'
+  let statut = 'enAttente'
 
   if (
     statutOriginal.includes('paye') ||
@@ -549,50 +610,22 @@ const normaliserRecu = (item) => {
     id: item.idPaiement || item.id || item.idInscription,
     idPaiement: item.idPaiement,
     idInscription: item.idInscription,
+
     formation: item.formation || 'Formation',
     centre: item.centre || 'Centre',
+
     date: item.date || item.datePaiement || item.dateInscription,
+
     montant: Number(item.montant || 0),
+
     reference: item.reference || item.numeroRecu || `RECU-${item.idInscription}`,
     numeroRecu: item.numeroRecu,
+    numeroTransaction: item.numeroTransaction,
+
     methode: item.methode || 'Mobile Money',
     operateur: item.operateur || '',
-    statut,
-    numeroTransaction: item.numeroTransaction
-  }
-}
 
-const getStatusClass = (statut) => {
-  switch (statut) {
-    case 'inscrit':
-      return 'bg-primary'
-    case 'reserve':
-      return 'bg-warning'
-    case 'termine':
-      return 'bg-success'
-    case 'enAttente':
-      return 'bg-warning'
-    case 'annule':
-      return 'bg-danger'
-    default:
-      return 'bg-secondary'
-  }
-}
-
-const getStatusLabel = (statut) => {
-  switch (statut) {
-    case 'inscrit':
-      return 'Inscrit'
-    case 'reserve':
-      return 'Réservé'
-    case 'termine':
-      return 'Terminé'
-    case 'enAttente':
-      return 'En attente'
-    case 'annule':
-      return 'Annulé'
-    default:
-      return statut
+    statut
   }
 }
 
@@ -612,6 +645,44 @@ function formatDate(date) {
     month: 'long',
     year: 'numeric'
   })
+}
+
+function getStatusLabel(statut) {
+  switch (statut) {
+    case 'inscrit':
+      return 'Inscrit'
+    case 'reserve':
+      return 'Réservé'
+    case 'termine':
+      return 'Terminé'
+    case 'enAttente':
+      return 'En attente'
+    case 'annule':
+      return 'Annulé'
+    case 'paye':
+      return 'Payé'
+    default:
+      return statut || 'En attente'
+  }
+}
+
+function getStatusClass(statut) {
+  switch (statut) {
+    case 'inscrit':
+      return 'bg-primary'
+    case 'reserve':
+      return 'bg-warning'
+    case 'termine':
+      return 'bg-success'
+    case 'enAttente':
+      return 'bg-warning'
+    case 'annule':
+      return 'bg-danger'
+    case 'paye':
+      return 'bg-success'
+    default:
+      return 'bg-secondary'
+  }
 }
 
 function viewDetails(inscription) {
@@ -638,455 +709,477 @@ async function downloadRecu(item) {
   }
 }
 
-function confirmCancel(inscription) {
-  if (confirm(`Êtes-vous sûr de vouloir annuler l'inscription à "${inscription.formation}" ?`)) {
-    cancelInscription(inscription.id)
-  }
-}
-
-async function cancelInscription(id) {
-  try {
-    console.log('Annulation inscription non encore connectée :', id)
-    alert("L'annulation n'est pas encore connectée côté backend.")
-  } catch (error) {
-    console.error("Erreur lors de l'annulation :", error)
-  }
-}
-
-function resetRecuFilters() {
-  recuFilters.value = {
-    formation: '',
-    date: ''
-  }
-}
-
-function toggleEdit() {
-  if (editing.value) {
-    editForm.value = {
-      prenom: authStore.user?.prenom || '',
-      nom: authStore.user?.nom || '',
-      telephone: authStore.user?.telephone || '',
-      password: '',
-      confirmPassword: ''
-    }
-
-    apiError.value = ''
-    errors.value = {}
-  }
-
-  editing.value = !editing.value
-}
-
-async function saveProfile() {
-  apiError.value = ''
-  errors.value = {}
-
-  if (!editForm.value.prenom.trim()) {
-    errors.value.prenom = 'Le prénom est requis'
-    return
-  }
-
-  if (!editForm.value.nom.trim()) {
-    errors.value.nom = 'Le nom est requis'
-    return
-  }
-
-  if (editForm.value.password || editForm.value.confirmPassword) {
-    if (editForm.value.password.length < 6) {
-      errors.value.password = 'Le mot de passe doit contenir au moins 6 caractères'
-      return
-    }
-
-    if (editForm.value.password !== editForm.value.confirmPassword) {
-      errors.value.confirmPassword = 'Les mots de passe ne correspondent pas'
-      return
-    }
-  }
-
-  submitting.value = true
-
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    if (authStore.user) {
-      authStore.user.prenom = editForm.value.prenom
-      authStore.user.nom = editForm.value.nom
-      authStore.user.telephone = editForm.value.telephone
-
-      localStorage.setItem('utilisateur', JSON.stringify(authStore.user))
-      localStorage.setItem(
-        'auth',
-        JSON.stringify({
-          user: authStore.user,
-          token: authStore.token || localStorage.getItem('token')
-        })
-      )
-    }
-
-    editing.value = false
-    editForm.value.password = ''
-    editForm.value.confirmPassword = ''
-  } catch (error) {
-    apiError.value = error.response?.data?.message || 'Erreur lors de la mise à jour du profil'
-  } finally {
-    submitting.value = false
-  }
-}
-
 async function loadInscriptions() {
-  loadingInscriptions.value = true
+  const idUser = getIdUser()
+  const data = await getMesInscriptions(idUser)
 
-  try {
-    const idUser = getIdUser()
-    const data = await getMesInscriptions(idUser)
+  console.log('✅ Inscriptions apprenant API =', data)
 
-    inscriptions.value = data.map(normaliserInscription)
-  } catch (error) {
-    console.error('Erreur lors du chargement des inscriptions :', error)
-    inscriptions.value = []
-  } finally {
-    loadingInscriptions.value = false
-  }
+  inscriptions.value = data.map(normaliserInscription)
 }
 
 async function loadRecus() {
-  loadingRecus.value = true
+  const idUser = getIdUser()
+  const data = await getMesRecus(idUser)
 
-  try {
-    const idUser = getIdUser()
-    const data = await getMesRecus(idUser)
+  console.log('✅ Reçus apprenant API =', data)
 
-    recus.value = data.map(normaliserRecu)
-  } catch (error) {
-    console.error('Erreur lors du chargement des reçus :', error)
-    recus.value = []
-  } finally {
-    loadingRecus.value = false
-  }
+  recus.value = data.map(normaliserRecu)
 }
 
 async function loadStats() {
-  try {
-    const idUser = getIdUser()
-    const data = await getMesStats(idUser)
+  const idUser = getIdUser()
+  const data = await getMesStats(idUser)
 
-    stats.value = {
-      totalInscriptions: Number(data.totalInscriptions || 0),
-      formationsEnCours: Number(data.formationsEnCours || 0),
-      formationsTerminees: Number(data.formationsTerminees || 0),
-      certificats: Number(data.certificats || 0),
-      tempsFormation: data.tempsFormation || '0h',
-      totalPaye: Number(data.totalPaye || 0)
-    }
-  } catch (error) {
-    console.error('Erreur lors du chargement des statistiques :', error)
+  console.log('✅ Stats apprenant API =', data)
+
+  stats.value = {
+    totalInscriptions: Number(data.totalInscriptions || 0),
+    formationsEnCours: Number(data.formationsEnCours || 0),
+    formationsTerminees: Number(data.formationsTerminees || 0),
+    certificats: Number(data.certificats || 0),
+    tempsFormation: data.tempsFormation || '0h',
+    totalPaye: Number(data.totalPaye || 0)
   }
 }
 
-async function loadProfile() {
-  loadingProfile.value = true
+async function loadData() {
+  loading.value = true
+  apiError.value = ''
 
   try {
-    const utilisateur = getUtilisateurConnecte()
+    await Promise.all([
+      loadInscriptions(),
+      loadRecus(),
+      loadStats()
+    ])
+  } catch (error) {
+    console.error('Erreur chargement espace apprenant :', error)
+    apiError.value = 'Erreur lors du chargement de votre espace.'
+  } finally {
+    loading.value = false
+  }
+}
 
-    if (utilisateur) {
-      editForm.value.prenom = utilisateur.prenom || ''
-      editForm.value.nom = utilisateur.nom || ''
-      editForm.value.telephone = utilisateur.telephone || ''
+function goAccueil() {
+  router.push('/accueil')
+}
+
+function goRecherche() {
+  router.push('/recherche')
+}
+
+function logout() {
+  localStorage.removeItem('auth')
+  localStorage.removeItem('utilisateur')
+  localStorage.removeItem('user')
+  localStorage.removeItem('token')
+  localStorage.removeItem('authToken')
+  localStorage.removeItem('formateurToken')
+  localStorage.removeItem('authFormateur')
+  localStorage.removeItem('adminToken')
+
+  sessionStorage.clear()
+
+  try {
+    if (authStore.user) {
+      authStore.user = null
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    if (authStore.token) {
+      authStore.token = null
+    }
+
+    if (authStore.$reset) {
+      authStore.$reset()
+    }
   } catch (error) {
-    console.error('Erreur lors du chargement du profil :', error)
-  } finally {
-    loadingProfile.value = false
+    console.log('Store déjà vidé')
   }
+
+  window.location.href = '/connexion'
 }
 
 onMounted(() => {
-  loadInscriptions()
-  loadRecus()
-  loadStats()
-  loadProfile()
+  loadData()
 })
 </script>
 
 <style scoped>
-.mon-espace-container {
+.apprenant-space {
   min-height: 100vh;
-  background: var(--eo-gray-50);
+  background: #f4f4f4;
 }
 
-.espace-header {
-  background: linear-gradient(135deg, var(--eo-primary) 0%, var(--eo-primary-dark) 100%);
-  padding: var(--eo-spacing-2xl) 0;
-  color: white;
-}
-
-.user-welcome {
+.hero {
+  background: linear-gradient(135deg, #1f1f1f, #2b2b2b);
+  color: #ffffff;
+  padding: 64px 8%;
   display: flex;
   align-items: center;
-  gap: var(--eo-spacing-lg);
-}
-
-.avatar-section {
-  flex-shrink: 0;
+  gap: 24px;
 }
 
 .avatar {
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.2);
+  width: 78px;
+  height: 78px;
   border-radius: 50%;
+  border: 4px solid #777;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
-  font-weight: 700;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  font-weight: 800;
+  background: #444;
+  font-size: 22px;
 }
 
-.welcome-text {
+.hero h1 {
+  font-size: 30px;
+  margin: 0 0 8px 0;
+}
+
+.hero p {
+  margin: 0 0 16px 0;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.hero-actions button {
+  border: 1px solid #ffffff;
+  border-radius: 20px;
+  background: transparent;
+  color: #ffffff;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.space-body {
+  max-width: 1120px;
+  margin: 48px auto;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  padding: 0 16px;
+}
+
+.sidebar {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  height: fit-content;
+}
+
+.menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.menu-item.active {
+  background: #161616;
+  color: #ffffff;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #ff3333;
+  color: #ff3333;
+  background: #ffffff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.content-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.section-title {
+  font-size: 26px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: #f3f3f3;
+  border-radius: 14px;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.stat-card h3 {
+  font-size: 26px;
+  margin: 0;
+}
+
+.stat-card p {
+  margin: 4px 0 0 0;
+}
+
+.stat-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+
+.stat-icon.black {
+  background: #111111;
+}
+
+.stat-icon.green {
+  background: #23833a;
+}
+
+.stat-icon.gold {
+  background: #c99d4f;
+}
+
+.stat-icon.gray {
+  background: #777777;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-item {
+  background: #f4f4f4;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.activity-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: #111111;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-content {
   flex: 1;
 }
 
-.welcome-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.75rem;
+.activity-content h4 {
+  margin: 0 0 6px 0;
 }
 
-.welcome-actions .btn {
-  border-radius: 999px;
-}
-
-.welcome-title {
-  font-size: var(--eo-font-size-3xl);
-  font-weight: 700;
+.activity-content p {
   margin: 0;
-  font-family: var(--eo-font-family);
+  color: #666;
 }
 
-.welcome-subtitle {
-  font-size: var(--eo-font-size-lg);
-  margin: var(--eo-spacing-sm) 0 0 0;
-  opacity: 0.9;
+.activity-progress {
+  min-width: 130px;
+  text-align: right;
 }
 
-.espace-content {
-  padding: var(--eo-spacing-2xl) 0;
+.progress {
+  height: 6px;
+  background: #e5e5e5;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 6px;
 }
 
-.nav-tabs {
-  border-bottom: 2px solid var(--eo-gray-200);
-  margin-bottom: var(--eo-spacing-xl);
+.progress-bar {
+  height: 100%;
+  background: #111111;
 }
 
-.nav-link {
-  color: var(--eo-gray-600);
-  font-weight: 500;
-  padding: var(--eo-spacing-md) var(--eo-spacing-lg);
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  background: #f1f1f1;
+  padding: 14px;
+  text-align: left;
+}
+
+.data-table td {
+  border-bottom: 1px solid #ddd;
+  padding: 14px;
+}
+
+.badge {
+  display: inline-block;
+  border-radius: 8px;
+  color: #ffffff;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bg-primary {
+  background: #111111;
+}
+
+.bg-warning {
+  background: #f59e0b;
+}
+
+.bg-success {
+  background: #208638;
+}
+
+.bg-danger {
+  background: #e3342f;
+}
+
+.bg-secondary {
+  background: #777777;
+}
+
+.small-btn {
+  border: 1px solid #111111;
+  background: #ffffff;
+  padding: 8px 14px;
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+.small-btn.success,
+.download-btn {
   border: none;
-  border-bottom: 3px solid transparent;
-  transition: all var(--eo-transition-base);
+  background: #2e7d32;
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.nav-link:hover {
-  color: var(--eo-primary);
-  border-color: transparent;
+.reference {
+  color: #e91e63;
+  font-weight: 700;
 }
 
-.nav-link.active {
-  color: var(--eo-primary);
-  background: transparent;
-  border-bottom-color: var(--eo-primary);
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
 }
 
-.content-section {
-  background: white;
-  border-radius: var(--eo-radius-xl);
-  box-shadow: var(--eo-shadow-md);
-  padding: var(--eo-spacing-xl);
+.course-card {
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
-.no-results {
+.course-image {
+  height: 150px;
+  background: linear-gradient(135deg, #1f1f1f, #3b3b3b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.course-image span {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 10px 24px;
+  font-weight: 800;
+}
+
+.course-content {
+  padding: 24px;
+}
+
+.course-content h3 {
+  margin-top: 0;
+}
+
+.course-meta {
+  display: flex;
+  gap: 18px;
+  color: #666;
+  margin: 16px 0;
+}
+
+.continue-btn {
+  width: 100%;
+  background: #111111;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.empty-state {
   text-align: center;
-  padding: var(--eo-spacing-3xl) var(--eo-spacing-xl);
+  padding: 48px;
+  background: #f5f5f5;
+  border-radius: 14px;
 }
 
-.no-results-icon {
-  font-size: 4rem;
-  color: var(--eo-gray-300);
-  margin-bottom: var(--eo-spacing-lg);
+.profile-box,
+.settings-box {
+  background: #f5f5f5;
+  border-radius: 14px;
+  padding: 24px;
 }
 
-.no-results h3 {
-  font-size: var(--eo-font-size-2xl);
-  color: var(--eo-gray-700);
-  margin-bottom: var(--eo-spacing-sm);
-}
-
-.no-results p {
-  color: var(--eo-gray-500);
-  margin-bottom: var(--eo-spacing-lg);
-}
-
-.table {
-  margin-bottom: 0;
-}
-
-.table th {
-  font-weight: 600;
-  color: var(--eo-gray-700);
-  border-bottom: 2px solid var(--eo-gray-200);
-  padding: var(--eo-spacing-md);
-}
-
-.table td {
-  padding: var(--eo-spacing-md);
-  vertical-align: middle;
-  border-bottom: 1px solid var(--eo-gray-100);
-}
-
-.table-hover tbody tr:hover {
-  background-color: var(--eo-gray-50);
-}
-
-.formation-name {
-  font-weight: 600;
-  color: var(--eo-gray-800);
-}
-
-.btn-group {
+.setting-row {
   display: flex;
-  gap: var(--eo-spacing-xs);
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+  padding: 20px 0;
 }
 
-.filters-bar {
-  background: var(--eo-gray-50);
-  padding: var(--eo-spacing-lg);
-  border-radius: var(--eo-radius-lg);
+.error-box {
+  color: #b00020;
 }
 
-.form-select,
-.form-control {
-  border-color: var(--eo-gray-300);
-}
-
-.form-select:focus,
-.form-control:focus {
-  border-color: var(--eo-primary);
-  box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
-}
-
-.profile-display .form-control-plaintext {
-  padding: var(--eo-spacing-md);
-  background: var(--eo-gray-50);
-  border-radius: var(--eo-radius-md);
-  font-weight: 500;
-  color: var(--eo-gray-800);
-}
-
-.form-label {
-  font-weight: 500;
-  color: var(--eo-gray-700);
-  margin-bottom: var(--eo-spacing-sm);
-}
-
-.form-actions {
-  display: flex;
-  gap: var(--eo-spacing-md);
-  margin-top: var(--eo-spacing-lg);
-  padding-top: var(--eo-spacing-lg);
-  border-top: 1px solid var(--eo-gray-200);
-}
-
-.btn-primary {
-  background-color: var(--eo-primary);
-  border-color: var(--eo-primary);
-  padding: var(--eo-spacing-md) var(--eo-spacing-xl);
-  font-weight: 600;
-  border-radius: var(--eo-radius-lg);
-  transition: all var(--eo-transition-base);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--eo-primary-dark);
-  border-color: var(--eo-primary-dark);
-  transform: translateY(-2px);
-  box-shadow: var(--eo-shadow-lg);
-}
-
-.btn-primary:disabled {
-  opacity: 0.7;
-}
-
-.btn-outline-primary,
-.btn-outline-success,
-.btn-outline-danger,
-.btn-outline-secondary {
-  border-radius: var(--eo-radius-md);
-  transition: all var(--eo-transition-base);
-}
-
-.btn-outline-primary:hover {
-  background-color: var(--eo-primary);
-  border-color: var(--eo-primary);
-  color: white;
-}
-
-.btn-outline-success:hover {
-  background-color: var(--eo-success);
-  border-color: var(--eo-success);
-  color: white;
-}
-
-.btn-outline-danger:hover {
-  background-color: var(--eo-danger);
-  border-color: var(--eo-danger);
-  color: white;
-}
-
-.btn-outline-secondary:hover {
-  background-color: var(--eo-gray-600);
-  border-color: var(--eo-gray-600);
-  color: white;
-}
-
-@media (max-width: 768px) {
-  .user-welcome {
-    flex-direction: column;
-    text-align: center;
+@media (max-width: 900px) {
+  .space-body {
+    grid-template-columns: 1fr;
   }
-  
-  .welcome-title {
-    font-size: var(--eo-font-size-2xl);
-  }
-  
-  .nav-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-  }
-  
-  .nav-link {
-    white-space: nowrap;
-  }
-  
-  .table-responsive {
-    font-size: var(--eo-font-size-sm);
-  }
-  
-  .btn-group {
-    flex-direction: column;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .form-actions .btn {
-    width: 100%;
+
+  .stats-grid,
+  .courses-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -92,10 +92,14 @@
               </div>
 
               <div class="sidebar-footer">
-                <button class="btn btn-outline-danger w-100" @click="handleLogout">
-                  <i class="bi bi-box-arrow-right me-2"></i>
-                  Déconnexion
-                </button>
+       <button
+  type="button"
+  class="logout-btn"
+  @click.prevent="logout"
+>
+  <i class="bi bi-box-arrow-right"></i>
+  Déconnexion
+</button>
               </div>
             </div>
           </div>
@@ -375,55 +379,79 @@
               </div>
             </div>
 
-            <!-- Courses Tab -->
-            <div v-if="activeTab === 'courses'" class="content-section">
-              <h3 class="section-title">
-                <i class="bi bi-book-fill me-2"></i>
-                Mes formations
-              </h3>
-              <div class="courses-grid">
-                <div class="course-card">
-                  <div class="course-image">
-                    <div class="course-category">Développement</div>
-                  </div>
-                  <div class="course-content">
-                    <h4 class="course-title">Développement Web avec Vue.js</h4>
-                    <p class="course-description">Apprenez à créer des applications web modernes avec Vue 3</p>
-                    <div class="course-meta">
-                      <span><i class="bi bi-clock me-1"></i> 20h</span>
-                      <span><i class="bi bi-play-circle me-1"></i> 20 leçons</span>
-                    </div>
-                    <div class="course-progress">
-                      <div class="progress" style="height: 8px;">
-                        <div class="progress-bar" style="width: 25%"></div>
-                      </div>
-                      <small>25% complété</small>
-                    </div>
-                    <button class="btn btn-primary w-100 mt-3">Continuer</button>
-                  </div>
-                </div>
-                <div class="course-card">
-                  <div class="course-image">
-                    <div class="course-category">Data Science</div>
-                  </div>
-                  <div class="course-content">
-                    <h4 class="course-title">Introduction à Python</h4>
-                    <p class="course-description">Les fondamentaux de la programmation en Python</p>
-                    <div class="course-meta">
-                      <span><i class="bi bi-clock me-1"></i> 15h</span>
-                      <span><i class="bi bi-play-circle me-1"></i> 15 leçons</span>
-                    </div>
-                    <div class="course-progress">
-                      <div class="progress" style="height: 8px;">
-                        <div class="progress-bar" style="width: 80%"></div>
-                      </div>
-                      <small>80% complété</small>
-                    </div>
-                    <button class="btn btn-primary w-100 mt-3">Continuer</button>
-                  </div>
-                </div>
-              </div>
-            </div>
+         <!-- Mes formations -->
+<div v-if="activeTab === 'courses'" class="content-section">
+  <h2 class="section-title">
+    <i class="bi bi-book-fill me-2"></i>
+    Mes formations
+  </h2>
+
+  <div v-if="inscriptions.length === 0" class="empty-state">
+    <div class="empty-icon">
+      <i class="bi bi-book"></i>
+    </div>
+
+    <h3>Aucune formation suivie</h3>
+
+    <p>
+      Vos formations apparaîtront ici après une inscription.
+    </p>
+  </div>
+
+  <div v-else class="courses-grid">
+    <div
+      v-for="inscription in inscriptions"
+      :key="inscription.id"
+      class="course-card"
+    >
+      <div class="course-image">
+        <span class="course-category">
+          {{ inscription.categorie || 'Formation' }}
+        </span>
+      </div>
+
+      <div class="course-content">
+        <h3 class="course-title">
+          {{ inscription.formation }}
+        </h3>
+
+        <p class="course-description">
+          {{ inscription.description || 'Formation suivie sur E-OFANA' }}
+        </p>
+
+        <div class="course-meta">
+          <span>
+            <i class="bi bi-clock me-1"></i>
+            {{ inscription.duree || 'Durée non définie' }}
+          </span>
+
+          <span>
+            <i class="bi bi-geo-alt me-1"></i>
+            {{ inscription.lieu || inscription.ville || 'Lieu non défini' }}
+          </span>
+        </div>
+
+        <div class="progress mt-3" style="height: 6px;">
+          <div
+            class="progress-bar"
+            :style="{ width: `${inscription.progression || 0}%` }"
+          ></div>
+        </div>
+
+        <p class="progress-text">
+          {{ inscription.progression || 0 }}% complété
+        </p>
+
+        <button
+          class="btn-continue"
+          @click="viewDetails(inscription)"
+        >
+          Continuer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
            <!-- Certificats -->
 <div v-if="activeTab === 'certificates'" class="content-card">
@@ -840,6 +868,7 @@ const normaliserInscription = (item) => {
     ecole: item.ecole || item.centre || 'Centre',
     centre: item.centre || item.ecole || 'Centre',
     categorie: item.categorie || 'Formation',
+    
 
     date: item.date || item.createdAt || item.dateDebut,
     statut,
@@ -1155,6 +1184,23 @@ async function loadProfile() {
   }
 }
 
+function logout() {
+  console.log('Déconnexion cliquée depuis MonEspace.vue')
+
+  localStorage.removeItem('auth')
+  localStorage.removeItem('utilisateur')
+  localStorage.removeItem('user')
+  localStorage.removeItem('token')
+  localStorage.removeItem('authToken')
+  localStorage.removeItem('formateurToken')
+  localStorage.removeItem('authFormateur')
+  localStorage.removeItem('adminToken')
+
+  sessionStorage.clear()
+
+  window.location.assign('/connexion')
+}
+
 onMounted(() => {
   loadInscriptions()
   loadRecus()
@@ -1286,6 +1332,29 @@ onMounted(() => {
   border-radius: var(--eo-radius-xl);
   box-shadow: var(--eo-shadow-md);
   padding: var(--eo-spacing-xl);
+}
+
+.logout-btn {
+  width: 100% !important;
+  background-color: #dc2626 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  text-decoration: none !important;
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
+}
+
+.logout-btn:hover {
+  background-color: #b91c1c !important;
+  color: white !important;
 }
 
 .section-title {
