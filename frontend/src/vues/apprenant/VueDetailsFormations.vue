@@ -1,314 +1,556 @@
 <template>
-  <main class="container-xl pb-5 vue-main-content">
-    <!-- BREADCRUMBS -->
-    <nav aria-label="breadcrumb" class="py-4">
-      <ol class="breadcrumb mb-0" style="font-size: 0.75rem;">
-        <li v-for="(crumb, index) in breadcrumbs" :key="index" class="breadcrumb-item" :class="{ active: crumb.active }">
-          <a v-if="!crumb.active" href="#" @click.prevent>{{ crumb.text }}</a>
-          <span v-else class="text-secondary">{{ crumb.text }}</span>
-        </li>
-      </ol>
-    </nav>
+  <div class="detail-page">
+    <div v-if="loading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+    </div>
 
-    <div class="row g-4">
-      <!-- LEFT COLUMN: Content -->
-      <div class="col-lg-8">
-        <!-- SECTION PRINCIPALE -->
-        <section class="mb-4">
-          <div class="hero-section p-0 overflow-hidden card-custom">
-            <!-- Image grande (responsive) -->
-            <div class="ratio ratio-21x9 bg-dark position-relative">
-              <img 
-                src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&auto=format&fit=crop" 
-                alt="Développement Web Full Stack" 
-                class="img-fluid object-fit-cover opacity-50"
-              />
-              <div class="position-absolute bottom-0 start-0 w-100 p-4 text-white gradient-overlay">
-                <span class="tag mb-2">{{ course.category }}</span>
-                <h1 class="display-6 fw-bold mb-2">{{ course.title }}</h1>
-                
-                <!-- Étoiles notation (placeholder Phase 2) -->
-                <div class="d-flex align-items-center gap-2 small">
-                  <span class="text-warning">★ {{ course.rating }}</span>
-                  <span class="opacity-75">({{ course.reviewsCount }} avis — Placeholder Phase 2)</span>
-                </div>
-              </div>
-            </div>
+    <div v-else-if="erreur" class="container py-5">
+      <div class="alert alert-danger">
+        {{ erreur }}
+      </div>
+    </div>
 
-            <!-- Détails de la formation -->
-            <div class="p-4 bg-white border-top">
-              <div class="row g-3 style-details">
-                <div class="col-6 col-md-3 d-flex align-items-center gap-2">
-                  <span class="material-symbols-outlined text-primary-custom">schedule</span>
-                  <div>
-                    <small class="text-muted d-block">Durée</small>
-                    <strong>{{ course.duration }}</strong>
-                  </div>
-                </div>
-                <div class="col-6 col-md-3 d-flex align-items-center gap-2">
-                  <span class="material-symbols-outlined text-primary-custom">location_on</span>
-                  <div>
-                    <small class="text-muted d-block">Lieu exact</small>
-                    <strong>{{ course.location }}</strong>
-                  </div>
-                </div>
-                <div class="col-6 col-md-3 d-flex align-items-center gap-2">
-                  <span class="material-symbols-outlined text-primary-custom">calendar_today</span>
-                  <div>
-                    <small class="text-muted d-block">Date début</small>
-                    <strong>{{ course.startDate }}</strong>
-                  </div>
-                </div>
-                <div class="col-6 col-md-3 d-flex align-items-center gap-2">
-                  <span class="material-symbols-outlined text-primary-custom">event_busy</span>
-                  <div>
-                    <small class="text-muted d-block">Limite inscription</small>
-                    <strong>{{ course.deadlineDate }}</strong>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Nombre de places restantes (Avertissement si < 5) -->
-              <div class="mt-4">
-                <div v-if="course.spotsLeft < 5" class="alert alert-danger d-flex align-items-center gap-2 mb-0" role="alert">
-                  <span class="material-symbols-outlined">warning</span>
-                  <div><strong>Attention !</strong> Il ne reste plus que {{ course.spotsLeft }} places disponibles pour cette session.</div>
-                </div>
-                <div v-else class="alert alert-success d-flex align-items-center gap-2 mb-0" role="alert">
-                  <span class="material-symbols-outlined">group</span>
-                  <div>{{ course.spotsLeft }} places restantes disponibles.</div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        <!-- DESCRIPTION LONGUE -->
-        <section class="mb-4">
-          <div class="card card-custom p-4">
-            <h2 class="h5 fw-bold mb-4">Description de la formation</h2>
-            <div class="text-secondary" style="line-height: 1.6;">
-              <p v-for="(paragraph, idx) in course.description" :key="idx" :class="{ 'mb-0': idx === course.description.length - 1 }">
-                {{ paragraph }}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <!-- SECTION FORMATEUR (Info du centre) -->
-        <section class="mb-4">
-          <div class="card card-custom p-4">
-            <h2 class="h5 fw-bold mb-4">Centre de formation</h2>
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-              <div class="d-flex align-items-center gap-3">
-                <!-- Logo du centre -->
-                <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 60px; height: 60px;">
-                  <span class="material-symbols-outlined text-secondary" style="font-size: 32px;">corporate_fare</span>
-                </div>
-                <div>
-                  <h3 class="h6 fw-bold mb-1">{{ center.name }}</h3>
-                  <p class="small text-muted mb-0 d-flex align-items-center gap-1">
-                    <span class="material-symbols-outlined" style="font-size: 14px;">distance</span>
-                    {{ center.location }}
-                  </p>
-                </div>
-              </div>
-              <a href="#" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" @click.prevent="contactCenter">
-                <span class="material-symbols-outlined" style="font-size: 16px;">mail</span>
-                Contacter le centre
-              </a>
-            </div>
-          </div>
-        </section>
-        
+    <div v-else class="container py-4">
+      <div class="mb-4 detail-breadcrumb">
+        {{ formation.titre }}
       </div>
 
-      <!-- RIGHT COLUMN: Section Prix (Encadré Bootstrap Card) -->
-      <aside class="col-lg-4">
-        <div class="sticky-price-bar card card-custom p-4">
-          <h2 class="h6 text-uppercase fw-bold text-muted tracking-wider mb-4">Tarification</h2>
-          
-          <div class="price-container mb-4">
-            <!-- Prix de base si remise existante -->
-            <div v-if="course.basePrice" class="d-flex justify-content-between align-items-center mb-1">
-              <span class="text-muted small">Prix public conseillé :</span>
-              <span class="text-decoration-line-through text-muted">{{ formatPrice(course.basePrice) }} Ar</span>
-            </div>
+      <div class="row g-4">
+        <div class="col-12 col-lg-8">
+          <div class="formation-hero">
+            <div class="hero-overlay">
+              <span class="badge-category">
+                {{ formation.categorie || "Catégorie non définie" }}
+              </span>
 
-            <!-- Prix remisé par le centre -->
-            <div v-if="course.basePrice" class="d-flex justify-content-between align-items-center mb-2">
-              <span class="text-muted small">Prix remisé centre :</span>
-              <span class="fw-semibold text-dark">{{ formatPrice(course.centerPrice) }} Ar</span>
-            </div>
+              <h1 class="formation-title">
+                {{ formation.titre || "Formation non définie" }}
+              </h1>
 
-            <!-- Prix final avec remise exclusive 5% E-ofana -->
-            <div class="p-3 bg-light rounded border border-warning-subtle mt-3">
-              <div class="d-flex justify-content-between align-items-end">
-                <div>
-                  <span class="badge bg-danger mb-1">-5% E-HOFANA</span>
-                  <div class="small text-muted">Tarif préférentiel :</div>
-                </div>
-                <div class="text-end">
-                  <h4 class="h2 fw-bold text-primary-custom mb-0">{{ formatPrice(finalPrice) }} Ar</h4>
-                  <small class="text-muted d-block" style="font-size: 11px;">Paiement unique</small>
-                </div>
+              <div class="formation-rating">
+                <span class="star">★</span>
+                <span>{{ formation.note || "Non notée" }}</span>
+                <span v-if="formation.nombreAvis">
+                  ({{ formation.nombreAvis }} avis)
+                </span>
               </div>
             </div>
           </div>
 
-          <!-- Boutons d'action -->
-          <div class="d-flex flex-column gap-3">
-            <button class="btn btn-primary-custom py-3 w-100" @click="enroll">
-              S'inscrire maintenant
-            </button>
-            <button class="btn btn-surface-dim py-3 w-100" @click="reserve">
-              Réserver une place
-            </button>
+          <div class="info-card mt-4">
+            <div class="row g-4">
+              <div class="col-6 col-md-3">
+                <div class="info-item">
+                  <i class="bi bi-clock"></i>
+                  <div>
+                    <p>Durée</p>
+                    <strong>{{ formation.duree || "Durée non définie" }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-3">
+                <div class="info-item">
+                  <i class="bi bi-geo-alt"></i>
+                  <div>
+                    <p>Lieu exact</p>
+                    <strong>
+                      {{ formation.lieu || formation.ville || "Lieu non défini" }}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-3">
+                <div class="info-item">
+                  <i class="bi bi-calendar"></i>
+                  <div>
+                    <p>Date début</p>
+                    <strong>{{ formatDate(formation.dateDebut) }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-3">
+                <div class="info-item">
+                  <i class="bi bi-calendar-x"></i>
+                  <div>
+                    <p>Limite inscription</p>
+                    <strong>{{ formatDate(formation.dateLimite) }}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="formation.placesRestantes" class="alert alert-warning mt-4 mb-0">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              Attention ! Il ne reste plus que {{ formation.placesRestantes }} places disponibles pour cette session.
+            </div>
+
+            <div v-else class="alert alert-info mt-4 mb-0">
+              <i class="bi bi-info-circle me-2"></i>
+              Places disponibles non définies.
+            </div>
           </div>
 
-          <div class="d-none d-lg-block mt-4 pt-4 border-top">
-            <h5 class="text-uppercase small fw-bold text-muted tracking-wider mb-3">Inclus d'office :</h5>
-            <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-              <li class="d-flex align-items-center gap-2 small text-secondary">
-                <span class="material-symbols-outlined text-primary-custom" style="font-size: 18px;">workspace_premium</span> Certificat de réussite émis par {{ center.name }}
+          <div class="content-card mt-4">
+            <h2>Description de la formation</h2>
+
+            <p>
+              {{ formation.description || "Aucune description disponible pour cette formation." }}
+            </p>
+          </div>
+
+          <div class="content-card mt-4">
+            <h2>Centre de formation</h2>
+
+            <div class="centre-box">
+              <div class="centre-icon">
+                <i class="bi bi-building"></i>
+              </div>
+
+              <div>
+                <h3>{{ formation.centre || "Centre non défini" }}</h3>
+                <p>
+                  <i class="bi bi-geo-alt me-1"></i>
+                  {{ formation.adresseCentre || formation.lieu || formation.ville || "Adresse non définie" }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+          <div class="price-card">
+            <h3>TARIFICATION</h3>
+
+            <div class="price-row">
+              <span>Prix public conseillé :</span>
+              <span class="old-price">
+                {{ formatPrix(formation.prix) }}
+              </span>
+            </div>
+
+            <div class="price-row">
+              <span>Prix remisé centre :</span>
+              <strong>
+                {{ formatPrix(formation.prixRemise || formation.prix) }}
+              </strong>
+            </div>
+
+            <div class="promo-box">
+              <span class="promo-badge">-5% E-HOFANA</span>
+
+              <div class="final-price">
+                {{ formatPrix(prixFinal) }}
+              </div>
+
+              <div class="small-text">
+                Tarif préférentiel · Paiement unique
+              </div>
+            </div>
+
+            <button class="btn-main" @click="sinscrire">
+              S'inscrire maintenant
+            </button>
+
+            <button class="btn-secondary-custom" @click="reserver">
+              Réserver une place
+            </button>
+
+            <hr />
+
+            <h4>INCLUS D'OFFICE :</h4>
+
+            <ul class="included-list">
+              <li>
+                <i class="bi bi-award"></i>
+                Certificat de réussite émis par
+                {{ formation.centre || "le centre de formation" }}
               </li>
-              <li class="d-flex align-items-center gap-2 small text-secondary">
-                <span class="material-symbols-outlined text-primary-custom" style="font-size: 18px;">forum</span> Accès à l'espace d'entraide
+
+              <li>
+                <i class="bi bi-chat-square-text"></i>
+                Accès à l'espace d'entraide
               </li>
             </ul>
           </div>
         </div>
-      </aside>
+      </div>
     </div>
-  </main>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
+import { obtenirFormationParId } from "../../api/formations.js"
 
-const currentView = ref('details')
+const route = useRoute()
 const router = useRouter()
-const breadcrumbs = ref([
-  { text: 'Développement Web Full Stack', active: true }
-])
 
-// --- Données du Formateur / Centre ---
-const center = ref({
-  name: 'TechAcademy Antananarivo',
-  location: 'En face de la gare, Soarano, Antananarivo',
-  email: 'contact@techacademy.mg'
+const formation = ref({})
+const loading = ref(false)
+const erreur = ref("")
+
+const idFormation = route.params.id
+
+const prixFinal = computed(() => {
+  const prixBase = Number(formation.value.prixRemise || formation.value.prix || 0)
+  return Math.round(prixBase * 0.95)
 })
 
-// --- Données Principales de la formation ---
-const course = ref({
-  title: 'Développement Web Full Stack',
-  category: 'Informatique',
-  rating: 4.8,
-  reviewsCount: 47,
-  spotsLeft: 3,             // Testez en mettant 12 pour voir l'alerte verte passer au rouge
-  location: 'Antananarivo (Présentiel)',
-  duration: '3 mois',
-  
-  // Gestion de la tarification
-  basePrice: 180000,        // Prix d'origine (optionnel)
-  centerPrice: 150000,      // Prix pratiqué par le centre avant réduction E-ofana
-  
-  startDate: '15 Juillet 2026',
-  deadlineDate: '10 Juillet 2026',
-  description: [
-    'Cette formation intensive vous prépare au développement web moderne. Vous apprendrez à créer des applications complètes du frontend au backend, en utilisant les technologies les plus demandées sur le marché malgache et international.',
-    "À l'issue de cette formation, vous serez capable de concevoir, développer et déployer des applications web professionnelles, et vous serez prêt à intégrer le marché de l'emploi numérique."
-  ]
-})
+function formatPrix(value) {
+  const number = Number(value || 0)
 
-// --- Prix Final avec calcul de la remise exclusive E-ofana de 5% ---
-const finalPrice = computed(() => {
-  const priceToDiscount = course.value.centerPrice
-  return Math.round(priceToDiscount * 0.95)
-})
+  if (number === 0) {
+    return "Prix non défini"
+  }
 
-// --- Formateur de prix pour l'affichage (Espaces pour les milliers) ---
-const formatPrice = (price) => {
-  return new Intl.NumberFormat('fr-FR').format(price)
+  return `${number.toLocaleString("fr-FR")} Ar`
 }
 
-// --- Méthodes d'action ---
-const enroll = () => router.push({ name: 'FormulaireInscription' })
-const reserve = () => router.push({ name: 'FormulaireReservation' })
-const contactCenter = () => alert(`Ouverture du formulaire de contact pour : ${center.value.email}`)
+function formatDate(value) {
+  if (!value) {
+    return "Date non définie"
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  })
+}
+
+async function chargerFormation() {
+  loading.value = true
+  erreur.value = ""
+
+  try {
+    const data = await obtenirFormationParId(idFormation)
+
+    formation.value = {
+      ...data,
+
+      id: data.id || data.idFormation || idFormation,
+
+      titre: data.titre || data.nom || "Formation",
+      description: data.description || "",
+
+      duree: data.duree || "",
+      lieu: data.lieu || data.ville || "",
+      ville: data.ville || data.lieu || "",
+
+      categorie: data.categorie || data.nomCategorie || "",
+      centre: data.centre || data.nomCentre || data.ecole || "",
+
+      adresseCentre: data.adresseCentre || data.adresse || "",
+
+      prix: Number(data.prix || data.prixPublic || 0),
+      prixRemise: Number(data.prixRemise || data.prix || data.prixPublic || 0),
+
+      dateDebut: data.dateDebut || data.dateDebutSession || "",
+      dateLimite: data.dateLimite || data.dateLimiteInscription || "",
+
+      placesRestantes: data.placesRestantes || data.nbPlacesRestantes || null,
+
+      note: data.note || data.rating || null,
+      nombreAvis: data.nombreAvis || data.nbAvis || null
+    }
+
+    console.log("Détail formation depuis la base :", formation.value)
+  } catch (error) {
+    console.error("Erreur chargement détail formation", error)
+    erreur.value = "Impossible de charger le détail de cette formation."
+  } finally {
+    loading.value = false
+  }
+}
+
+function sinscrire() {
+  const id = formation.value.id || idFormation
+
+  localStorage.setItem("formationSelectionnee", JSON.stringify(formation.value))
+
+  router.push({
+    path: "/inscription",
+    query: {
+      formationId: id
+    }
+  })
+}
+
+function reserver() {
+  const id = formation.value.id || idFormation
+
+  localStorage.setItem("formationSelectionnee", JSON.stringify(formation.value))
+
+  router.push({
+    path: "/inscription",
+    query: {
+      formationId: id,
+      type: "reservation"
+    }
+  })
+}
+
+onMounted(() => {
+  chargerFormation()
+})
 </script>
 
 <style scoped>
-.vue-main-content {
-  --primary-color: #c59d5f;
-  --surface-color: #fbf9f8;
-  --surface-dim: #dbdad9;
-  --dark-color: #1a1a1a;
-  --hero-bg: #0f2a41;
-  --border-radius-custom: 8px;
+.detail-page {
+  background: #f8f8f8;
+  min-height: 100vh;
 }
 
-.text-primary-custom { color: var(--primary-color) !important; }
-
-.gradient-overlay {
-  background: linear-gradient(to top, rgba(15, 42, 65, 0.95) 20%, rgba(15, 42, 65, 0.2));
+.detail-breadcrumb {
+  color: #b8792f;
+  font-size: 14px;
 }
 
-.style-details strong {
-  display: block;
-  font-size: 0.9rem;
+.formation-hero {
+  min-height: 320px;
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(10, 25, 40, 0.75), rgba(10, 25, 40, 0.75)),
+    url("https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200&auto=format&fit=crop");
+  background-size: cover;
+  background-position: center;
+  color: white;
 }
 
-.btn-primary-custom {
-  background-color: var(--primary-color);
-  color: #121212 !important; 
-  border: none;
-  font-weight: 700;
-  border-radius: var(--border-radius-custom);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease; 
-}
-.btn-primary-custom:hover {
-  color: #121212 !important; 
-  background-color: var(--primary-color); 
-  opacity: 0.95;
-  transform: translateY(-2px); 
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); 
+.hero-overlay {
+  padding: 40px;
 }
 
-.btn-surface-dim {
-  background-color: rgba(219, 218, 217, 0.4);
-  color: var(--dark-color);
-  border: none;
+.badge-category {
+  background: #c9a15b;
+  color: #111111;
+  border-radius: 999px;
+  padding: 8px 16px;
   font-weight: 600;
-  border-radius: var(--border-radius-custom);
-}
-.btn-surface-dim:hover { background-color: rgba(219, 218, 217, 0.6); }
-
-.card-custom {
-  background: white;
-  border-radius: var(--border-radius-custom);
-  border: none;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.sticky-price-bar {
-  position: sticky;
-  top: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-.tag {
-  background: var(--primary-color);
-  color: #121212;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.25rem 0.75rem;
-  border-radius: 50rem;
   display: inline-block;
+  margin-bottom: 16px;
 }
 
-.breadcrumb a { color: var(--primary-color); text-decoration: none; }
-.breadcrumb-item + .breadcrumb-item::before { content: "/"; color: #6c757d; }
+.formation-title {
+  font-size: 42px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.formation-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.star {
+  color: #f59e0b;
+}
+
+.info-card,
+.content-card,
+.price-card {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.info-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.info-item i {
+  color: #c9a15b;
+  font-size: 22px;
+}
+
+.info-item p {
+  margin: 0;
+  color: #666666;
+  font-size: 14px;
+}
+
+.info-item strong {
+  color: #111111;
+}
+
+.content-card h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+.content-card p {
+  color: #b8792f;
+  line-height: 1.8;
+}
+
+.centre-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.centre-icon {
+  width: 60px;
+  height: 60px;
+  background: #f4f4f4;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c9a15b;
+  font-size: 28px;
+}
+
+.centre-box h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.centre-box p {
+  margin: 0;
+  color: #666666;
+}
+
+.price-card {
+  position: sticky;
+  top: 100px;
+}
+
+.price-card h3 {
+  font-weight: 800;
+  margin-bottom: 24px;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 12px;
+}
+
+.old-price {
+  text-decoration: line-through;
+  color: #666666;
+}
+
+.promo-box {
+  border: 1px solid #f0b75b;
+  border-radius: 8px;
+  padding: 18px;
+  margin: 22px 0;
+}
+
+.promo-badge {
+  background: #dc2626;
+  color: white;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.final-price {
+  color: #c9a15b;
+  font-size: 34px;
+  font-weight: 800;
+  margin-top: 12px;
+}
+
+.small-text {
+  color: #666666;
+  font-size: 13px;
+}
+
+.btn-main {
+  width: 100%;
+  background: #c9a15b;
+  color: #111111;
+  border: none;
+  border-radius: 8px;
+  padding: 16px;
+  font-weight: 800;
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+
+.btn-main:hover {
+  background: #b88d44;
+}
+
+.btn-secondary-custom {
+  width: 100%;
+  background: #f0f0f0;
+  color: #111111;
+  border: none;
+  border-radius: 8px;
+  padding: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-secondary-custom:hover {
+  background: #e0e0e0;
+}
+
+.included-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 0;
+}
+
+.included-list li {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  color: #b8792f;
+}
+
+.included-list i {
+  color: #c9a15b;
+}
+
+.alert-warning {
+  background: #f8d7da;
+  border-color: #f1aeb5;
+  color: #58151c;
+}
+
+.alert-info {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0c4a6e;
+}
+
+@media (max-width: 768px) {
+  .formation-title {
+    font-size: 30px;
+  }
+
+  .hero-overlay {
+    padding: 24px;
+  }
+
+  .price-card {
+    position: static;
+  }
+}
 </style>

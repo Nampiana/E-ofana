@@ -1,81 +1,57 @@
-const API_BASE_URL = "http://localhost:8081/api/v1";
+const API_BASE_URL = "http://localhost:8081/api/v1"
 
-const normaliserFormation = (formation) => {
-  const prix = Number(formation.prix || 0);
-  const prixRemise = Number(formation.prixRemise || 0);
-  const prixFinal = prixRemise > 0 ? prixRemise : prix;
-
+function normaliserFormation(item) {
   return {
-    ...formation,
+    ...item,
 
-    id: formation.idFormation,
-    idFormation: formation.idFormation,
+    id: item.id || item.idFormation || item._id,
+    idFormation: item.idFormation || item.id || item._id,
 
-    title: formation.titre || "Formation sans titre",
-    titre: formation.titre || "Formation sans titre",
+    titre: item.titre || item.nom || "Formation",
+    nom: item.nom || item.titre || "Formation",
 
-    description: formation.description || "",
+    description: item.description || "",
+    duree: item.duree || "",
+    lieu: item.lieu || item.ville || "",
+    ville: item.ville || item.lieu || "",
 
-    category: formation.categorie || "Formation",
-    categorie: formation.categorie || "Formation",
+    categorie: item.categorie || item.nomCategorie || "",
+    centre: item.centre || item.nomCentre || item.ecole || "",
 
-    centre: formation.centre || "Centre non défini",
+    prix: Number(item.prix || item.prixPublic || 0),
+    prixRemise: Number(item.prixRemise || item.prix || item.prixPublic || 0),
 
-    ville: formation.ville || formation.lieu || "Antananarivo",
-    lieu: formation.lieu || formation.ville || "Antananarivo",
+    image: item.image || item.imageUrl || null,
 
-    duree: formation.duree || "Durée non définie",
-    dateDebut: formation.dateDebut || "À définir",
+    dateDebut: item.dateDebut || "",
+    dateLimite: item.dateLimite || item.dateLimiteInscription || ""
+  }
+}
 
-    prix: prixFinal,
-    prixOriginal: prix,
-    prixRemise,
-
-    placesDisponibles: true,
-    placesRestantes: formation.placesRestantes || 20,
-
-    pertinence: 100,
-  };
-};
-
-export const obtenirFormations = async () => {
-  console.log("APPEL API FORMATIONS =", `${API_BASE_URL}/formations`);
-
-  const response = await fetch(`${API_BASE_URL}/formations`);
+export async function obtenirFormations() {
+  const response = await fetch(`${API_BASE_URL}/formations`)
 
   if (!response.ok) {
-    throw new Error("Impossible de charger les formations");
+    throw new Error("Impossible de charger les formations")
   }
 
-  const data = await response.json();
+  const data = await response.json()
 
-  console.log("FORMATIONS API =", data);
-
-  if (Array.isArray(data)) {
-    return data.map(normaliserFormation);
+  if (!Array.isArray(data)) {
+    return []
   }
 
-  return [];
-};
+  return data.map(normaliserFormation)
+}
 
-export const obtenirFormationParId = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/formations/${id}`);
+export async function obtenirFormationParId(id) {
+  const response = await fetch(`${API_BASE_URL}/formations/${id}`)
 
   if (!response.ok) {
-    throw new Error("Impossible de charger la formation");
+    throw new Error("Impossible de charger le détail de la formation")
   }
 
-  const data = await response.json();
+  const data = await response.json()
 
-  return normaliserFormation(data);
-};
-
-export const getFormations = async () => {
-  const data = await obtenirFormations();
-  return { data };
-};
-
-export const getFormationById = async (id) => {
-  const data = await obtenirFormationParId(id);
-  return { data };
-};
+  return normaliserFormation(data)
+}

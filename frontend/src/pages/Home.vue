@@ -56,27 +56,30 @@
 
   <!-- Section Statistiques -->
   <section class="stats-bar">
-    <div class="container px-4">
-      <div class="row text-center g-4 g-md-0">
-        <div class="col-6 col-md-3 border-end border-dark border-opacity-10">
-          <div class="stat-number">500+</div>
-          <div class="stat-label">Formations</div>
-        </div>
-        <div class="col-6 col-md-3 border-end-md border-dark border-opacity-10">
-          <div class="stat-number">120+</div>
-          <div class="stat-label">Centres partenaires</div>
-        </div>
-        <div class="col-6 col-md-3 border-end border-dark border-opacity-10">
-          <div class="stat-number">15 000+</div>
-          <div class="stat-label">Apprenants</div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="stat-number">18</div>
-          <div class="stat-label">Régions couvertes</div>
-        </div>
+  <div class="container px-4">
+    <div class="row text-center g-4 g-md-0">
+      <div class="col-6 col-md-3 border-end-md border-dark border-opacity-10">
+        <div class="stat-number">{{ formatStat(publicStats.formations) }}+</div>
+        <div class="stat-label">Formations</div>
+      </div>
+
+      <div class="col-6 col-md-3 border-end-md border-dark border-opacity-10">
+        <div class="stat-number">{{ formatStat(publicStats.centres) }}+</div>
+        <div class="stat-label">Centres partenaires</div>
+      </div>
+
+      <div class="col-6 col-md-3 border-end-md border-dark border-opacity-10">
+        <div class="stat-number">{{ formatStat(publicStats.apprenants) }}+</div>
+        <div class="stat-label">Apprenants</div>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <div class="stat-number">{{ formatStat(publicStats.regions) }}</div>
+        <div class="stat-label">Régions couvertes</div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
   <!-- Section Formations en Vedette -->
   <section class="py-5 container px-4">
@@ -121,6 +124,7 @@ import { useRouter } from "vue-router";
 import CarteFormation from "../composants/CarteFormation.vue";
 import navPage from "../composants/navPage.vue";
 import { obtenirFormations } from "../api/formations.js";
+import { getPublicStats, getPublicCategories } from "../api/publicApi.js";
 
 const router = useRouter();
 
@@ -131,14 +135,48 @@ const formations = ref([]);
 const loading = ref(false);
 const erreur = ref("");
 
-const categories = ref([
-  { name: 'Informatique' },
-  { name: 'Marketing' },
-  { name: 'Finance' },
-  { name: 'Management' },
-  { name: 'Agriculture' },
-  { name: 'Artisanat' }
-]);
+const categories = ref([]);
+const publicStats = ref({
+  formations: 0,
+  centres: 0,
+  apprenants: 0,
+  regions: 0
+});
+
+function formatStat(value) {
+  const number = Number(value || 0);
+
+  if (number >= 1000) {
+    return number.toLocaleString("fr-FR");
+  }
+
+  return number;
+}
+
+async function chargerDonneesAccueil() {
+  try {
+    const stats = await getPublicStats();
+
+    publicStats.value = {
+      formations: stats.formations || 0,
+      centres: stats.centres || 0,
+      apprenants: stats.apprenants || 0,
+      regions: stats.regions || 0
+    };
+  } catch (error) {
+    console.error("Erreur chargement statistiques accueil", error);
+  }
+
+  try {
+    const categoriesApi = await getPublicCategories();
+
+    categories.value = Array.isArray(categoriesApi)
+      ? categoriesApi.map((nom) => ({ name: nom }))
+      : [];
+  } catch (error) {
+    console.error("Erreur chargement catégories accueil", error);
+  }
+}
 
 async function chargerFormations() {
   loading.value = true;
@@ -217,6 +255,8 @@ function voirDetail(formation) {
 
 onMounted(() => {
   chargerFormations();
+  chargerDonneesAccueil();
+
 });
 </script>
 
