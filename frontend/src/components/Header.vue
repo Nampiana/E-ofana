@@ -26,10 +26,10 @@
           <span>Rechercher</span>
         </a>
         <template v-if="authStore.isAuthenticated">
-          <router-link class="nav-action-link d-flex align-items-center gap-2" to="/mon-espace-apprenant" @click="closeMenu">
-            <span class="material-symbols-outlined" style="font-size: 20px;">dashboard</span>
-            <span>Mon espace</span>
-          </router-link>
+          <router-link class="nav-action-link d-flex align-items-center gap-2" to="/mon-espace" @click="closeMenu">
+  <span class="material-symbols-outlined" style="font-size: 20px;">dashboard</span>
+  <span>Mon espace</span>
+</router-link>
           <div class="d-flex align-items-center gap-2 text-white-50" @click="closeMenu">
             <div class="user-avatar-nav">{{ initials }}</div>
             <span class="small d-none d-md-inline text-white">{{ displayName }}</span>
