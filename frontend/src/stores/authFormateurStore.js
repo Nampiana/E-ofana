@@ -1,111 +1,91 @@
-import { defineStore } from "pinia";
-
-const API_BASE_URL = "http://localhost:8081";
+import { defineStore } from "pinia"
+import { connexionFormateur, deconnexionFormateur } from "../api/formateurApi"
 
 export const useAuthFormateurStore = defineStore("authFormateur", {
   state: () => ({
-    token: localStorage.getItem("tokenFormateur") || null,
-    formateur: JSON.parse(localStorage.getItem("formateur") || "null"),
-    utilisateur: JSON.parse(localStorage.getItem("formateur") || "null"),
+    token: null,
+    formateur: null,
     loading: false,
-    error: null,
+    error: ""
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.token,
-    estConnecte: (state) => !!state.token,
-    isLoggedIn: (state) => !!state.token,
+    isAuthenticated: (state) => !!state.token
   },
 
   actions: {
-    loadFromStorage() {
-      const token = localStorage.getItem("tokenFormateur");
-      const formateur = localStorage.getItem("formateur");
+    chargerDepuisStorage() {
+      const raw = localStorage.getItem("authFormateur")
 
-      this.token = token || null;
-
-      try {
-        this.formateur = formateur ? JSON.parse(formateur) : null;
-        this.utilisateur = this.formateur;
-      } catch (error) {
-        this.formateur = null;
-        this.utilisateur = null;
+      if (!raw) {
+        return
       }
 
-      return !!this.token;
+      try {
+        const data = JSON.parse(raw)
+        this.token = data.token || null
+        this.formateur = data.formateur || null
+      } catch (error) {
+        this.token = null
+        this.formateur = null
+        localStorage.removeItem("authFormateur")
+      }
     },
 
-    chargerDepuisStorage() {
-      return this.loadFromStorage();
+    loadFromStorage() {
+      this.chargerDepuisStorage()
     },
 
     async login(email, motDePasse) {
-      this.loading = true;
-      this.error = null;
+      this.loading = true
+      this.error = ""
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/auth-formateur/connexion`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: email,
-            motDePasse: motDePasse,
-            password: motDePasse,
-          }),
-        });
+        const data = await connexionFormateur(email, motDePasse)
 
-        const data = await response.json().catch(() => null);
+        this.token = data.token || data.jwt || data.accessToken || ""
 
-        if (!response.ok) {
-          throw new Error(
-            data?.message ||
-              data?.error ||
-              "Email ou mot de passe incorrect."
-          );
+        this.formateur = {
+          idUser: data.idUser || data.id || data.userId,
+          nom: data.nom || data.lastName || "",
+          prenom: data.prenom || data.firstName || "",
+          email: data.email || email,
+          telephone: data.telephone || "",
+          typeUtilisateur: data.typeUtilisateur || data.role || "FORMATEUR"
         }
 
-        const token = data?.token || data?.accessToken || data?.jwt;
-
-        if (!token) {
-          throw new Error("Connexion réussie mais aucun token reçu depuis le backend.");
+        const authFormateur = {
+          token: this.token,
+          formateur: this.formateur
         }
 
-        const formateurData = data?.utilisateur || data?.user || data?.formateur || data;
+        localStorage.setItem("authFormateur", JSON.stringify(authFormateur))
+        localStorage.setItem("tokenFormateur", this.token)
+        localStorage.setItem("formateurToken", this.token)
 
-        this.token = token;
-        this.formateur = formateurData;
-        this.utilisateur = formateurData;
-
-        localStorage.setItem("tokenFormateur", token);
-        localStorage.setItem("formateur", JSON.stringify(formateurData));
-
-        return data;
+        return true
       } catch (error) {
-        this.error = error.message || "Erreur de connexion formateur.";
-        throw error;
+        this.error = error.message || "Connexion impossible"
+        return false
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
-    async connexion(email, motDePasse) {
-      return this.login(email, motDePasse);
-    },
+    async logout() {
+      try {
+        await deconnexionFormateur()
+      } catch (error) {
+        console.log("Déconnexion backend ignorée")
+      }
 
-    logout() {
-      this.token = null;
-      this.formateur = null;
-      this.utilisateur = null;
-      this.error = null;
+      this.token = null
+      this.formateur = null
+      this.error = ""
 
-      localStorage.removeItem("tokenFormateur");
-      localStorage.removeItem("formateur");
-    },
-
-    deconnexion() {
-      this.logout();
-    },
-  },
-});
+      localStorage.removeItem("authFormateur")
+      localStorage.removeItem("tokenFormateur")
+      localStorage.removeItem("formateurToken")
+    }
+  }
+})

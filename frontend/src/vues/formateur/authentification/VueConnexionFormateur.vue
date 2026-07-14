@@ -113,6 +113,13 @@
             </svg>
             <span>Vous n'avez pas de compte ? Contactez votre interlocuteur commercial E-ofana.</span>
           </div>
+
+          <router-link
+            to="/"
+            class="btn btn-outline-dark w-100 mt-3"
+          >
+            ← Retour à l'accueil
+          </router-link>
         </div>
       </div>
     </main>
@@ -157,10 +164,10 @@ const validateForm = () => {
 const handleSubmit = async () => {
   if (!validateForm()) return
 
-  const result = await authFormateurStore.login(form.email, form.password)
+  const success = await authFormateurStore.login(form.email, form.password)
 
-  if (result.success) {
-    router.push({ name: 'FormateurTableauDeBord' })
+  if (success) {
+    router.push('/formateur/tableau-de-bord')
   }
 }
 </script>

@@ -221,12 +221,24 @@ router.beforeEach((to, from, next) => {
     localStorage.getItem("token") ||
     localStorage.getItem("authToken");
 
+  let authFormateurToken = null
+  const authFormateurRaw = localStorage.getItem("authFormateur")
+
+  if (authFormateurRaw) {
+    try {
+      const authFormateurData = JSON.parse(authFormateurRaw)
+      authFormateurToken = authFormateurData?.token || null
+    } catch (error) {
+      authFormateurToken = null
+    }
+  }
+
   const formateurToken =
+    authFormateurToken ||
     localStorage.getItem("tokenFormateur") ||
     localStorage.getItem("formateurToken");
 
-  const adminToken =
-    localStorage.getItem("adminToken");
+  const adminToken = localStorage.getItem("adminToken");
 
   if (to.meta.requiresAuth && !token) {
     next("/connexion");

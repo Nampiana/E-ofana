@@ -289,4 +289,130 @@ public ResponseEntity<?> supprimerFormation(@PathVariable Long id) {
         return ResponseEntity.status(500).body(response);
     }
 }
+
+@DeleteMapping("/api/v1/formateurs/formations/{id}")
+public ResponseEntity<?> supprimerFormationFormateur(@PathVariable Long id) {
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+        jdbcTemplate.update("""
+            DELETE FROM eofana.inscriptions
+            WHERE "idSession" IN (
+                SELECT "idSession"
+                FROM eofana."sessionsFormation"
+                WHERE "idFormation" = ?
+            )
+        """, id);
+
+        jdbcTemplate.update("""
+            DELETE FROM eofana."sessionsFormation"
+            WHERE "idFormation" = ?
+        """, id);
+
+        int deleted = jdbcTemplate.update("""
+            DELETE FROM eofana.formations
+            WHERE "idFormation" = ?
+        """, id);
+
+        if (deleted > 0) {
+            response.put("success", true);
+            response.put("message", "Formation supprimée avec succès");
+            return ResponseEntity.ok(response);
+        }
+
+        response.put("success", false);
+        response.put("message", "Formation introuvable");
+        return ResponseEntity.status(404).body(response);
+
+    } catch (Exception e) {
+        response.put("success", false);
+        response.put("message", "Suppression impossible : " + e.getMessage());
+        return ResponseEntity.status(500).body(response);
+    }
+}
+@PostMapping("/api/v1/formateurs/formations")
+public ResponseEntity<?> creerFormationFormateur(
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+        @RequestBody Map<String, Object> request
+) {
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+        Long idUserFormateur = extraireIdUserDepuisToken(authorizationHeader);
+
+        if (idUserFormateur == null) {
+            idUserFormateur = 4L; // fallback test : Tsiky
+        }
+
+        Long idCentre = jdbcTemplate.queryForObject("""
+            SELECT "idCentre"
+            FROM eofana.centres
+            WHERE "idUser" = ?
+            LIMIT 1
+        """, Long.class, idUserFormateur);
+
+        Long idCategorie;
+
+        if (request.get("idCategorie") != null && !String.valueOf(request.get("idCategorie")).isBlank()) {
+            idCategorie = Long.valueOf(String.valueOf(request.get("idCategorie")));
+        } else {
+            idCategorie = jdbcTemplate.queryForObject("""
+                SELECT "idCategorie"
+                FROM eofana.categories
+                ORDER BY "idCategorie"
+                LIMIT 1
+            """, Long.class);
+        }
+
+        String titre = String.valueOf(request.getOrDefault("titre", ""));
+        String description = String.valueOf(request.getOrDefault("description", ""));
+        String image = String.valueOf(request.getOrDefault("image", ""));
+        String duree = String.valueOf(request.getOrDefault("duree", ""));
+        String lieu = String.valueOf(request.getOrDefault("lieu", ""));
+
+        Integer prix = Integer.valueOf(String.valueOf(request.getOrDefault("prix", "0")));
+        Integer prixRemise = Integer.valueOf(String.valueOf(request.getOrDefault("prixRemise", prix)));
+
+        int inserted = jdbcTemplate.update("""
+            INSERT INTO eofana.formations (
+                "idCentre",
+                "idCategorie",
+                titre,
+                description,
+                image,
+                duree,
+                lieu,
+                prix,
+                "prixRemise",
+                statut,
+                "noteMoyenne",
+                "nbAvis",
+                "createdAt",
+                "updatedAt"
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'enAttente', 0, 0, NOW(), NOW())
+        """,
+            idCentre,
+            idCategorie,
+            titre,
+            description,
+            image,
+            duree,
+            lieu,
+            prix,
+            prixRemise
+        );
+
+        response.put("success", inserted > 0);
+        response.put("message", "Formation créée avec succès. Elle est en attente de validation.");
+
+        return ResponseEntity.ok(response);
+
+    } catch (Exception e) {
+        response.put("success", false);
+        response.put("message", "Création impossible : " + e.getMessage());
+        return ResponseEntity.status(500).body(response);
+    }
+}
+
 }

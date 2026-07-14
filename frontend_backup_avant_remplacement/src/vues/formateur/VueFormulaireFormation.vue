@@ -301,223 +301,99 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import api from '../../api/axios'
+import { reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
-const router = useRouter()
-const route = useRoute()
+const router = useRouter();
 
-const modeEdition = computed(() => !!route.params.id)
-const formationId = computed(() => route.params.id || null)
+const API_BASE_URL = "http://localhost:8081";
 
-const fileInput = ref(null)
-const imagePreview = ref(null)
-const imageFile = ref(null)
-const submitting = ref(false)
-const apiError = ref('')
-const successMessage = ref('')
-const formationOriginale = ref({})
+const chargement = ref(false);
+const erreur = ref("");
+const success = ref("");
+const imagePreview = ref("");
 
 const form = reactive({
-  titre: '',
-  description: '',
-  categorie: '',
-  duree: '',
-  lieu: '',
-  dateDebut: '',
-  dateLimite: '',
-  nombrePlaces: '',
-  prix: '',
-  prixRemise: '',
-  image: ''
-})
+  titre: "",
+  description: "",
+  image: "",
+  duree: "",
+  lieu: "",
+  prix: 0,
+  prixRemise: 0,
+});
 
-const errors = reactive({
-  titre: '',
-  description: '',
-  categorie: '',
-  duree: '',
-  lieu: '',
-  dateDebut: '',
-  dateLimite: '',
-  nombrePlaces: '',
-  prix: '',
-  prixRemise: '',
-  image: ''
-})
+function choisirImage(event) {
+  const file = event.target.files?.[0];
 
-const validateField = (field) => {
-  switch (field) {
-    case 'titre':
-      errors.titre = form.titre ? '' : 'Le titre est obligatoire.'
-      break
-    case 'description':
-      errors.description = form.description ? '' : 'La description est obligatoire.'
-      break
-    case 'categorie':
-      errors.categorie = form.categorie ? '' : 'La catégorie est obligatoire.'
-      break
-    case 'duree':
-      errors.duree = form.duree ? '' : 'La durée est obligatoire.'
-      break
-    case 'lieu':
-      errors.lieu = form.lieu ? '' : 'Le lieu est obligatoire.'
-      break
-    case 'dateDebut':
-      errors.dateDebut = form.dateDebut ? '' : 'La date de début est obligatoire.'
-      break
-    case 'dateLimite':
-      errors.dateLimite = form.dateLimite ? '' : 'La date limite est obligatoire.'
-      break
-    case 'nombrePlaces':
-      errors.nombrePlaces = form.nombrePlaces > 0 ? '' : 'Le nombre de places doit être supérieur à 0.'
-      break
-    case 'prix':
-      errors.prix = form.prix >= 0 ? '' : 'Le prix est obligatoire.'
-      break
-    case 'prixRemise':
-      if (form.prixRemise !== '' && form.prixRemise !== null) {
-        errors.prixRemise = form.prixRemise >= 0 ? '' : 'Le prix remisé ne peut pas être négatif.'
-      } else {
-        errors.prixRemise = ''
-      }
-      break
-    case 'image':
-      errors.image = ''
-      break
-  }
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    imagePreview.value = reader.result;
+    form.image = reader.result;
+  };
+
+  reader.readAsDataURL(file);
 }
 
-const validateForm = () => {
-  validateField('titre')
-  validateField('description')
-  validateField('categorie')
-  validateField('duree')
-  validateField('lieu')
-  validateField('dateDebut')
-  validateField('dateLimite')
-  validateField('nombrePlaces')
-  validateField('prix')
-  return !Object.values(errors).some(error => error)
+function retirerImage() {
+  imagePreview.value = "";
+  form.image = "";
 }
 
-const triggerImageUpload = () => {
-  fileInput.value?.click()
-}
-
-const onImageSelected = (event) => {
-  const file = event.target.files[0]
-  if (!file) return
-
-  const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-  if (!validTypes.includes(file.type)) {
-    errors.image = 'Format non supporté. Utilisez JPG, PNG, GIF ou WebP.'
-    return
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    errors.image = 'L\'image ne doit pas dépasser 5 Mo.'
-    return
-  }
-
-  errors.image = ''
-  imageFile.value = file
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    imagePreview.value = e.target.result
-  }
-  reader.readAsDataURL(file)
-}
-
-const removeImage = () => {
-  imageFile.value = null
-  imagePreview.value = null
-  form.image = ''
-  if (fileInput.value) fileInput.value.value = ''
-}
-
-const annuler = () => {
-  router.push({ name: 'FormateurTableauDeBord' })
-}
-
-const handleSubmit = async () => {
-  if (!validateForm()) return
-
-  apiError.value = ''
-  successMessage.value = ''
-  submitting.value = true
+async function enregistrerFormation() {
+  erreur.value = "";
+  success.value = "";
+  chargement.value = true;
 
   try {
-    const formData = new FormData()
-    formData.append('titre', form.titre)
-    formData.append('description', form.description)
-    formData.append('categorie', form.categorie)
-    formData.append('duree', form.duree)
-    formData.append('lieu', form.lieu)
-    formData.append('dateDebut', form.dateDebut)
-    formData.append('dateLimiteInscription', form.dateLimite)
-    formData.append('nombrePlaces', form.nombrePlaces)
-    formData.append('prix', form.prix)
-    if (form.prixRemise !== '' && form.prixRemise !== null) {
-      formData.append('prixRemise', form.prixRemise)
-    }
-    if (imageFile.value) {
-      formData.append('image', imageFile.value)
+    const token =
+      localStorage.getItem("tokenFormateur") ||
+      localStorage.getItem("formateurToken") ||
+      "";
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/formateurs/formations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        titre: form.titre,
+        description: form.description,
+        image: form.image,
+        duree: form.duree,
+        lieu: form.lieu,
+        prix: form.prix,
+        prixRemise: form.prixRemise || form.prix,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.message || "Impossible de créer la formation.");
     }
 
-    if (modeEdition.value) {
-      await api.put(`/v1/formations/${formationId.value}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      successMessage.value = 'Formation modifiée avec succès. Elle sera visible après approbation du modérateur.'
-    } else {
-      await api.post('/v1/formations', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      successMessage.value = 'Formation créée avec succès. Elle sera visible après approbation du modérateur.'
-    }
+    success.value = data.message || "Formation créée avec succès.";
 
     setTimeout(() => {
-      router.push({ name: 'FormateurTableauDeBord' })
-    }, 2000)
-  } catch (err) {
-    const message = err.response?.data?.message
-    if (message) {
-      apiError.value = message
-    } else if (err.message) {
-      apiError.value = err.message
-    } else {
-      apiError.value = 'Une erreur est survenue. Veuillez réessayer.'
-    }
+      router.push("/formateur/formations");
+    }, 800);
+  } catch (error) {
+    erreur.value = error.message || "Erreur lors de la création.";
   } finally {
-    submitting.value = false
+    chargement.value = false;
   }
 }
 
-onMounted(async () => {
-  if (modeEdition.value) {
-    try {
-      const response = await api.get(`/v1/formations/${formationId.value}`)
-      const data = response.data
-
-      formationOriginale.value = data
-      form.titre = data.titre || ''
-      form.description = data.description || ''
-      form.categorie = data.categorie || ''
-      form.duree = data.duree || ''
-      form.lieu = data.lieu || ''
-      form.dateDebut = data.dateDebut || ''
-      form.dateLimite = data.dateLimiteInscription || data.dateLimite || ''
-      form.nombrePlaces = data.nombrePlaces || ''
-      form.prix = data.prix || ''
-      form.prixRemise = data.prixRemise || ''
-      form.image = data.image || ''
-    } catch (err) {
-      apiError.value = 'Impossible de charger les données de la formation.'
-    }
-  }
-})
+function retour() {
+  router.push("/formateur/formations");
+}
 </script>
+
 
 <style scoped>
 .eo-form-card {

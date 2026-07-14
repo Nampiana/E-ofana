@@ -169,6 +169,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { supprimerFormationFormateur } from "../../api/formateurApi.js";
 
 const router = useRouter();
 
@@ -247,7 +248,7 @@ async function chargerFormations() {
 }
 
 function publierFormation() {
-  router.push("/formateur/creation");
+  router.push({ name: "FormateurCreation" });
 }
 
 async function ouvrirStats(formation) {
@@ -312,25 +313,18 @@ async function supprimerFormation(formation) {
     `Voulez-vous vraiment supprimer la formation : ${formation.titre} ?`
   );
 
-  if (!confirmation) {
+  if (!confirmation) return;
+
+  const idFormation = formation.idFormation ?? formation.id;
+  if (!idFormation) {
+    alert("Impossible de supprimer : identifiant de formation introuvable.");
     return;
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/formations/${formation.idFormation}`, {
-      method: "DELETE",
-      headers,
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw new Error(data?.message || data?.error || "Suppression impossible.");
-    }
-
-    formations.value = formations.value.filter(
-      (item) => item.idFormation !== formation.idFormation
-    );
+    await supprimerFormationFormateur(idFormation);
+    await chargerFormations();
+    alert("Formation supprimée avec succès.");
   } catch (error) {
     alert(error.message || "Erreur lors de la suppression.");
   }

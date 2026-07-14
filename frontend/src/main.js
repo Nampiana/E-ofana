@@ -18,13 +18,10 @@ const auth = useAuthStore()
 auth.loadFromStorage()
 
 const authFormateur = useAuthFormateurStore()
-// 🔧 Auto-connexion en dev pour tester sans backend
-if (import.meta.env.DEV && !localStorage.getItem('authFormateur')) {
-  localStorage.setItem('authFormateur', JSON.stringify({
-    formateur: { id: 1, nom: 'Formateur Test', email: 'test@test.com' },
-    token: 'mock-token-formateur-123'
-  }))
-}
-authFormateur.loadFromStorage()
 
+if (typeof authFormateur.loadFromStorage === "function") {
+  authFormateur.loadFromStorage()
+} else if (typeof authFormateur.chargerDepuisStorage === "function") {
+  authFormateur.chargerDepuisStorage()
+}
 app.mount('#app')

@@ -7,8 +7,10 @@ import com.eofana.repository.CategorieRepository;
 import com.eofana.repository.CentreRepository;
 import com.eofana.repository.FormationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -55,7 +57,10 @@ public class FormationController {
 
     @PostMapping
     @Transactional
-    public FormationResponse creerFormation(@RequestBody FormationRequest request) {
+    public FormationResponse creerFormation(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @RequestBody FormationRequest request
+    ) {
         Formation formation = new Formation();
 
         formation.setTitre(request.titre());
@@ -68,19 +73,55 @@ public class FormationController {
 
         if (request.idCategorie() != null) {
             Categorie categorie = categorieRepository.findById(request.idCategorie())
-                    .orElseThrow(() -> new RuntimeException("Catégorie introuvable"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Catégorie introuvable"));
             formation.setCategorie(categorie);
         }
 
+        Centre centre = null;
+
         if (request.idCentre() != null) {
-            Centre centre = centreRepository.findById(request.idCentre())
-                    .orElseThrow(() -> new RuntimeException("Centre introuvable"));
-            formation.setCentre(centre);
+            centre = centreRepository.findById(request.idCentre())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Centre introuvable"));
+        } else {
+            centre = trouverCentreFormateurConnecte(authorizationHeader);
         }
+
+        if (centre == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Centre introuvable pour ce formateur");
+        }
+
+        formation.setCentre(centre);
 
         Formation saved = formationRepository.save(formation);
 
         return toResponse(saved);
+    }
+
+    private Centre trouverCentreFormateurConnecte(String authorizationHeader) {
+        Long idUserFormateur = extraireIdUserDepuisToken(authorizationHeader);
+        if (idUserFormateur == null) {
+            return null;
+        }
+
+        return centreRepository.findByUtilisateur_IdUser(idUserFormateur).orElse(null);
+    }
+
+    private Long extraireIdUserDepuisToken(String authorizationHeader) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            return null;
+        }
+
+        String token = authorizationHeader.replace("Bearer", "").trim();
+
+        if (token.startsWith("formateur-token-")) {
+            try {
+                return Long.parseLong(token.replace("formateur-token-", ""));
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     private boolean filtreCategorie(FormationResponse formation, String categorie) {
