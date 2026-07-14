@@ -75,7 +75,9 @@ const routes = [
         path: "mon-espace",
         name: "MonEspace",
         component: MonEspace,
-        meta: { requiresAuth: true },
+        meta: {
+          requiresAuth: true,
+        },
       },
       {
         path: "accueil",
@@ -86,31 +88,41 @@ const routes = [
         path: "apprenant/accueil",
         name: "ApprenantAccueil",
         component: VueAccueil,
-        meta: { requiresAuth: true },
+        meta: {
+          requiresAuth: true,
+        },
       },
       {
         path: "apprenant/mon-espace",
         name: "ApprenantMonEspace",
         component: VueMonEspace,
-        meta: { requiresAuth: true },
+        meta: {
+          requiresAuth: true,
+        },
       },
       {
         path: "mon-formulaire",
         name: "FormulaireInscription",
         component: FormulaireInscription,
-        meta: { requiresAuth: true },
+        meta: {
+          requiresAuth: true,
+        },
       },
       {
         path: "mon-formulaire-reservation",
         name: "FormulaireReservation",
         component: FormulaireReservation,
-        meta: { requiresAuth: true },
+        meta: {
+          requiresAuth: true,
+        },
       },
       {
         path: "admin/tableau-de-bord",
         name: "AdminTableauDeBord",
         component: () => import("../vues/admin/VueTableauDeBordAdmin.vue"),
-        meta: { requiresAuthAdmin: true },
+        meta: {
+          requiresAuthAdmin: true,
+        },
       },
     ],
   },
@@ -128,49 +140,67 @@ const routes = [
     children: [
       {
         path: "",
-        redirect: "/formateur/dashboard",
+        redirect: "/formateur/tableau-de-bord",
       },
       {
         path: "dashboard",
+        redirect: "/formateur/tableau-de-bord",
+      },
+      {
+        path: "tableau-de-bord",
         name: "FormateurTableauDeBord",
         component: VueTableauDeBord,
-        meta: { requiresAuthFormateur: true },
+        meta: {
+          requiresAuthFormateur: true,
+        },
       },
       {
         path: "formations",
         name: "MesFormations",
         component: VueMesFormations,
-        meta: { requiresAuthFormateur: true },
+        meta: {
+          requiresAuthFormateur: true,
+        },
       },
       {
         path: "profil-centre",
         name: "FormateurProfilCentre",
         component: () => import("../vues/formateur/VueProfilCentre.vue"),
-        meta: { requiresAuthFormateur: true },
+        meta: {
+          requiresAuthFormateur: true,
+        },
       },
       {
         path: "liste-inscrits",
         name: "FormateurListeInscrits",
         component: () => import("../vues/formateur/VueListeInscrits.vue"),
-        meta: { requiresAuthFormateur: true },
+        meta: {
+          requiresAuthFormateur: true,
+        },
       },
       {
         path: "finances",
         name: "FormateurFinances",
         component: () => import("../vues/formateur/VueFinances.vue"),
-        meta: { requiresAuthFormateur: true },
+        meta: {
+          requiresAuthFormateur: true,
+        },
       },
       {
         path: "creation",
         name: "FormateurCreation",
         component: () => import("../vues/formateur/VueFormulaireFormation.vue"),
-        meta: { requiresAuthFormateur: true },
+        meta: {
+          requiresAuthFormateur: true,
+        },
       },
       {
         path: "modification/:id",
         name: "FormateurModification",
         component: () => import("../vues/formateur/VueFormulaireFormation.vue"),
-        meta: { requiresAuthFormateur: true },
+        meta: {
+          requiresAuthFormateur: true,
+        },
       },
     ],
   },
@@ -187,9 +217,16 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem("token") || localStorage.getItem("authToken");
-  const formateurToken = localStorage.getItem("formateurToken");
-  const adminToken = localStorage.getItem("adminToken");
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("authToken");
+
+  const formateurToken =
+    localStorage.getItem("tokenFormateur") ||
+    localStorage.getItem("formateurToken");
+
+  const adminToken =
+    localStorage.getItem("adminToken");
 
   if (to.meta.requiresAuth && !token) {
     next("/connexion");

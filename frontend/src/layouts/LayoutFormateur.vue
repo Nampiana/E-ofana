@@ -1,164 +1,178 @@
 <template>
   <div class="formateur-layout">
-    <HeaderFormateur @menu-toggle="isMobileSidebarOpen = true" />
+    <aside class="sidebar">
+      <h3 class="logo">E-OFANA</h3>
 
-    <div class="formateur-shell">
-      <aside class="sidebar-desktop d-none d-lg-flex">
-        <SidebarFormateur @logout="handleLogout" />
-      </aside>
-
-      <transition name="sidebar-fade">
-        <button
-          v-if="isMobileSidebarOpen"
-          class="mobile-backdrop d-lg-none"
-          type="button"
-          aria-label="Fermer le menu"
-          @click="isMobileSidebarOpen = false"
-        ></button>
-      </transition>
-
-      <aside class="mobile-sidebar d-lg-none" :class="{ open: isMobileSidebarOpen }">
-        <div class="mobile-sidebar-header">
-          <h5 class="offcanvas-title text-white fw-bold mb-0">Menu</h5>
-          <button type="button" class="btn-close btn-close-white" aria-label="Fermer le menu" @click="isMobileSidebarOpen = false"></button>
+      <div class="centre-box">
+        <div class="avatar">{{ initials }}</div>
+        <div>
+          <div class="small">Centre connecté</div>
+          <strong>{{ displayName }}</strong>
         </div>
-        <div class="mobile-sidebar-body">
-          <SidebarFormateur @logout="handleLogout" @link-clicked="closeMobileSidebar" />
-        </div>
-      </aside>
+      </div>
 
-      <main class="main-content">
-        <div class="content-body">
-          <router-view />
-        </div>
-      </main>
-    </div>
+      <nav class="menu">
+        <router-link to="/formateur/tableau-de-bord">Tableau de bord</router-link>
+        <router-link to="/formateur/formations">Mes formations</router-link>
+        <router-link to="/formateur/profil-centre">Mon profil</router-link>
+        <router-link to="/formateur/finances">Finances</router-link>
+
+        <button class="logout-btn" @click="logout">
+          Déconnexion
+        </button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <h1>Espace formateur</h1>
+        <span>{{ displayName }}</span>
+      </header>
+
+      <section class="content">
+        <router-view />
+      </section>
+    </main>
   </div>
-  <NavPage></NavPage>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthFormateurStore } from '../stores/authFormateurStore'
-import HeaderFormateur from '../components/HeaderFormateur.vue'
-import SidebarFormateur from '../components/SidebarFormateur.vue'
-import NavPage from '../composants/navPage.vue'
+import { computed, onMounted } from "vue"
+import { useRouter } from "vue-router"
+import { useAuthFormateurStore } from "../stores/authFormateurStore"
 
 const router = useRouter()
-const authFormateurStore = useAuthFormateurStore()
+const authStore = useAuthFormateurStore()
 
-const isMobileSidebarOpen = ref(false)
+onMounted(() => {
+  authStore.chargerDepuisStorage()
+})
 
-const closeMobileSidebar = () => {
-  isMobileSidebarOpen.value = false
-}
+const displayName = computed(() => {
+  const f = authStore.formateur
 
-const handleLogout = () => {
-  authFormateurStore.logout()
-  closeMobileSidebar()
-  router.push({ name: 'Connexion' })
+  if (!f) {
+    return "Formateur"
+  }
+
+  return `${f.prenom || ""} ${f.nom || ""}`.trim() || f.email || "Formateur"
+})
+
+const initials = computed(() => {
+  const name = displayName.value || "F"
+  return name.charAt(0).toUpperCase()
+})
+
+async function logout() {
+  await authStore.logout()
+  router.push("/formateur/connexion")
 }
 </script>
 
 <style scoped>
 .formateur-layout {
   min-height: 100vh;
-  background: #f8f9fa;
-  color: #1a1a1a;
-  --formateur-header-height: 72px;
-}
-
-.formateur-shell {
   display: flex;
-  min-height: calc(100vh - var(--formateur-header-height));
+  background: #f5f5f5;
 }
 
-.sidebar-desktop {
-  width: 260px;
-  background: #1a1a1a;
-  border-right: 1px solid #2d2d2d;
-  padding: 1.5rem 0;
-  position: sticky;
-  top: var(--header-height);
-  height: calc(100vh - var(--header-height));
-  flex-direction: column;
-  justify-content: space-between;
-  flex-shrink: 0;
+.sidebar {
+  width: 270px;
+  background: #111111;
+  color: white;
+  padding: 24px;
+}
+
+.logo {
+  font-weight: 800;
+  margin-bottom: 32px;
+}
+
+.centre-box {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 32px;
+  padding: 12px;
+  background: #1f1f1f;
+  border-radius: 12px;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #c9a15b;
+  color: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.small {
+  color: #bbbbbb;
+  font-size: 12px;
+}
+
+.menu {
+  display: grid;
+  gap: 10px;
+}
+
+.menu a,
+.logout-btn {
+  text-decoration: none;
+  color: white;
+  background: #222222;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.menu a.router-link-active {
+  background: #c9a15b;
+  color: #111111;
+}
+
+.logout-btn {
+  background: #dc2626;
+  margin-top: 20px;
 }
 
 .main-content {
   flex: 1;
-  min-width: 0;
 }
 
-.content-body {
-  padding: 2.5rem;
-}
-
-.mobile-backdrop {
-  position: fixed;
-  inset: var(--formateur-header-height) 0 0 0;
-  border: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 1070;
-}
-
-.mobile-sidebar {
-  position: fixed;
-  top: var(--formateur-header-height);
-  left: 0;
-  width: 280px;
-  height: calc(100vh - var(--formateur-header-height));
-  background: #1a1a1a;
-  border-right: 1px solid #2d2d2d;
-  transform: translateX(-100%);
-  transition: transform 0.25s ease;
-  z-index: 1080;
+.topbar {
+  background: white;
+  padding: 18px 28px;
+  border-bottom: 1px solid #dddddd;
   display: flex;
-  flex-direction: column;
-}
-
-.mobile-sidebar.open {
-  transform: translateX(0);
-}
-
-.mobile-sidebar-header {
-  min-height: 64px;
-  padding: 0 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: space-between;
 }
 
-.mobile-sidebar-body {
-  padding: 0.75rem 0 1.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
+.topbar h1 {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 800;
 }
 
-.sidebar-fade-enter-active,
-.sidebar-fade-leave-active {
-  transition: opacity 0.2s ease;
+.content {
+  padding: 28px;
 }
 
-.sidebar-fade-enter-from,
-.sidebar-fade-leave-to {
-  opacity: 0;
-}
-
-@media (max-width: 991.98px) {
-  .content-body {
-    padding: 1.5rem;
+@media (max-width: 768px) {
+  .formateur-layout {
+    display: block;
   }
-}
 
-@media (max-width: 575.98px) {
-  .content-body {
-    padding: 1rem;
+  .sidebar {
+    width: 100%;
   }
 }
 </style>

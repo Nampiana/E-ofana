@@ -12,22 +12,22 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v1/auth-formateur")
 @CrossOrigin(origins = {
         "http://localhost:5173",
         "http://localhost:5174"
 })
-public class AuthController {
+public class AuthFormateurController {
 
     private final UtilisateurRepository utilisateurRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public AuthController(UtilisateurRepository utilisateurRepository) {
+    public AuthFormateurController(UtilisateurRepository utilisateurRepository) {
         this.utilisateurRepository = utilisateurRepository;
     }
 
     @PostMapping("/connexion")
-    public ResponseEntity<?> connexionApprenant(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> connexionFormateur(@RequestBody Map<String, String> request) {
         String email = request.get("email");
         String motDePasse = request.get("motDePasse");
 
@@ -37,7 +37,6 @@ public class AuthController {
 
         if (email == null || email.isBlank() || motDePasse == null || motDePasse.isBlank()) {
             Map<String, Object> erreur = new HashMap<>();
-            erreur.put("success", false);
             erreur.put("message", "Email et mot de passe obligatoires");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erreur);
         }
@@ -46,7 +45,6 @@ public class AuthController {
 
         if (utilisateurOptional.isEmpty()) {
             Map<String, Object> erreur = new HashMap<>();
-            erreur.put("success", false);
             erreur.put("message", "Email ou mot de passe incorrect");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(erreur);
         }
@@ -55,10 +53,9 @@ public class AuthController {
 
         String role = String.valueOf(utilisateur.getRole());
 
-        if (!"apprenant".equalsIgnoreCase(role)) {
+        if (!"FORMATEUR".equalsIgnoreCase(role)) {
             Map<String, Object> erreur = new HashMap<>();
-            erreur.put("success", false);
-            erreur.put("message", "Ce compte n'est pas un compte apprenant");
+            erreur.put("message", "Ce compte n'est pas un compte formateur");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(erreur);
         }
 
@@ -70,15 +67,13 @@ public class AuthController {
 
         if (!motDePasseCorrect) {
             Map<String, Object> erreur = new HashMap<>();
-            erreur.put("success", false);
             erreur.put("message", "Email ou mot de passe incorrect");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(erreur);
         }
 
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("token", "apprenant-token-" + utilisateur.getIdUser());
-        response.put("typeUtilisateur", "APPRENANT");
+        response.put("token", "formateur-token-" + utilisateur.getIdUser());
+        response.put("typeUtilisateur", "FORMATEUR");
         response.put("idUser", utilisateur.getIdUser());
         response.put("nom", utilisateur.getNom());
         response.put("prenom", utilisateur.getPrenom());
@@ -89,10 +84,9 @@ public class AuthController {
     }
 
     @PostMapping("/deconnexion")
-    public ResponseEntity<?> deconnexionApprenant() {
+    public ResponseEntity<?> deconnexionFormateur() {
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Déconnexion apprenant réussie");
+        response.put("message", "Déconnexion formateur réussie");
         return ResponseEntity.ok(response);
     }
 }

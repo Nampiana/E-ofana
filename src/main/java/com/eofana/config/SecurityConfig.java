@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+
 /**
  * Déclare le bean BCryptPasswordEncoder utilisé dans tout le projet
  * pour hasher et vérifier les mots de passe (voir UtilisateurService).

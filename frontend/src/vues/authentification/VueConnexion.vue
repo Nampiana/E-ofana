@@ -152,90 +152,175 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../../stores/authStore'
-import { useAuthFormateurStore } from '../../stores/authFormateurStore'
-import { useAuthAdminStore } from '../../stores/authAdminStore'
+import { ref, reactive, computed } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "../../stores/authStore";
+import { useAuthFormateurStore } from "../../stores/authFormateurStore";
+import { useAuthAdminStore } from "../../stores/authAdminStore";
 
-const router = useRouter()
-const authStore = useAuthStore()
-const authFormateurStore = useAuthFormateurStore()
-const authAdminStore = useAuthAdminStore()
+const router = useRouter();
 
-const activeRole = ref('apprenant')
+const authStore = useAuthStore();
+const authFormateurStore = useAuthFormateurStore();
+const authAdminStore = useAuthAdminStore();
+
+const activeRole = ref("apprenant");
 
 const form = reactive({
-  email: '',
-  password: ''
-})
+  email: "",
+  password: "",
+});
 
-const errors = reactive({})
-const showPassword = ref(false)
+const errors = reactive({});
+const showPassword = ref(false);
 
 const currentLoading = computed(() => {
-  if (activeRole.value === 'apprenant') return authStore.loading
-  if (activeRole.value === 'formateur') return authFormateurStore.loading
-  return authAdminStore.loading
-})
+  if (activeRole.value === "apprenant") return authStore.loading;
+  if (activeRole.value === "formateur") return authFormateurStore.loading;
+  return authAdminStore.loading;
+});
 
 const currentError = computed(() => {
-  if (activeRole.value === 'apprenant') return authStore.error
-  if (activeRole.value === 'formateur') return authFormateurStore.error
-  return authAdminStore.error
-})
+  if (activeRole.value === "apprenant") return authStore.error;
+  if (activeRole.value === "formateur") return authFormateurStore.error;
+  return authAdminStore.error;
+});
 
 const switchRole = (role) => {
-  activeRole.value = role
-  authStore.error = null
-  authFormateurStore.error = null
-  authAdminStore.error = null
-  Object.keys(errors).forEach(key => errors[key] = '')
-}
+  activeRole.value = role;
+
+  authStore.error = null;
+  authFormateurStore.error = null;
+  authAdminStore.error = null;
+
+  Object.keys(errors).forEach((key) => {
+    errors[key] = "";
+  });
+
+  if (role === "formateur") {
+    form.email = "tsiky@gmail.com";
+    form.password = "789456123";
+  } else {
+    form.email = "";
+    form.password = "";
+  }
+};
 
 const validateField = (field) => {
   switch (field) {
-    case 'email':
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      errors.email = emailRegex.test(form.email) ? '' : 'Email invalide'
-      break
-    case 'password':
-      errors.password = form.password ? '' : 'Le mot de passe est requis'
-      break
+    case "email": {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      errors.email = emailRegex.test(form.email) ? "" : "Email invalide";
+      break;
+    }
+
+    case "password": {
+      errors.password = form.password ? "" : "Le mot de passe est requis";
+      break;
+    }
   }
-}
+};
 
 const validateForm = () => {
-  validateField('email')
-  validateField('password')
-  
-  return !Object.values(errors).some(error => error)
-}
+  validateField("email");
+  validateField("password");
+  return !Object.values(errors).some((error) => error);
+};
+
+const loginFormateur = async () => {
+  authFormateurStore.loading = true;
+  authFormateurStore.error = null;
+
+  try {
+    const response = await fetch("http://localhost:8081/api/v1/auth-formateur/connexion", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: form.email,
+        motDePasse: form.password,
+        password: form.password,
+      }),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+          data?.error ||
+          "Erreur de connexion formateur"
+      );
+    }
+
+    const token = data?.token || data?.accessToken || data?.jwt;
+
+    if (!token) {
+      throw new Error("Token formateur non reçu depuis le backend.");
+    }
+
+    localStorage.setItem("tokenFormateur", token);
+    localStorage.setItem("formateurToken", token);
+    localStorage.setItem("formateur", JSON.stringify(data));
+
+    authFormateurStore.token = token;
+    authFormateurStore.formateur = data;
+    authFormateurStore.utilisateur = data;
+
+    router.push({ name: "FormateurTableauDeBord" });
+  } catch (error) {
+    authFormateurStore.error = error.message || "Erreur de connexion formateur";
+  } finally {
+    authFormateurStore.loading = false;
+  }
+};
 
 const handleSubmit = async () => {
-  if (!validateForm()) return
+  if (!validateForm()) return;
 
-  let result
+  authStore.error = null;
+  authFormateurStore.error = null;
+  authAdminStore.error = null;
 
-  if (activeRole.value === 'apprenant') {
-    result = await authStore.login(form.email, form.password)
-    if (result.success) {
-      router.push({ name: 'Accueil' })
+  if (activeRole.value === "apprenant") {
+    const result = await authStore.login(form.email, form.password);
+
+    if (result?.success || localStorage.getItem("token") || localStorage.getItem("authToken")) {
+      router.push({ name: "ApprenantMonEspace" });
+      return;
     }
-  } else if (activeRole.value === 'formateur') {
-    result = await authFormateurStore.login(form.email, form.password)
-    if (result.success) {
-      router.push({ name: 'FormateurTableauDeBord' })
-    }
-  } else {
-    result = await authAdminStore.login(form.email, form.password)
-    if (result.success) {
-      router.push({ name: 'AdminTableauDeBord' })
-    }
+
+    authStore.error =
+      result?.message ||
+      result?.error ||
+      authStore.error ||
+      "Erreur de connexion apprenant";
+
+    return;
   }
-}
-</script>
 
+  if (activeRole.value === "formateur") {
+    await loginFormateur();
+    return;
+  }
+
+  if (activeRole.value === "admin") {
+    const result = await authAdminStore.login(form.email, form.password);
+
+    if (result?.success || localStorage.getItem("adminToken")) {
+      router.push({ name: "AdminTableauDeBord" });
+      return;
+    }
+
+    authAdminStore.error =
+      result?.message ||
+      result?.error ||
+      authAdminStore.error ||
+      "Erreur de connexion admin";
+  }
+};
+</script>
 <style scoped>
 /* 
  * Variables CSS (Copied from target design)

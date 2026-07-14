@@ -2,25 +2,17 @@ package com.eofana.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/**
- * Configuration TEMPORAIRE de la sécurité HTTP.
- *
- * Dès que spring-boot-starter-security est sur le classpath, Spring
- * Security protège par défaut TOUTES les routes et affiche une page
- * de login auto-générée. Pour ce sprint (T-B-002 : entité + repository
- * Utilisateur, pas encore d'authentification HTTP), on désactive cette
- * protection automatique afin de pouvoir tester les futurs contrôleurs
- * du module Apprenant sans être bloqué par un login.
- *
- * ⚠ À REMPLACER dans un sprint ultérieur (authentification réelle :
- * JWT ou session) par une configuration qui protège effectivement
- * les routes selon le rôle de l'utilisateur connecté.
- */
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityFilterConfig {
@@ -28,18 +20,59 @@ public class SecurityFilterConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Toutes les routes sont ouvertes pour l'instant (sprint en cours)
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-            // Pas de session HTTP : l'API sera consommée par le frontend
-            // Vue.js de façon stateless (préparation pour JWT plus tard)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // CSRF désactivé : pertinent uniquement pour les formulaires
-            // server-side classiques, pas pour une API consommée par Vue.js
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
             .csrf(csrf -> csrf.disable())
-            // Désactive aussi le formulaire de login HTML auto-généré
+
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+
             .formLogin(form -> form.disable())
-            .httpBasic(basic -> basic.disable());
+
+            .httpBasic(basic -> basic.disable())
+
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/auth-formateur/**").permitAll()
+                .requestMatchers("/api/v1/formations/**").permitAll()
+                .requestMatchers("/api/v1/formateurs/**").permitAll()
+
+                .anyRequest().permitAll()
+            );
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of(
+            "http://localhost:5173",
+            "http://localhost:5174"
+        ));
+
+        configuration.setAllowedMethods(List.of(
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "OPTIONS"
+        ));
+
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source =
+            new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 }
