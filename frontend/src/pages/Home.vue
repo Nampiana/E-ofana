@@ -246,11 +246,14 @@ const handleSearch = () => {
 };
 
 function voirDetail(formation) {
-  const id = formation?.id ?? formation?._id ?? formation?.slug;
+  const id = formation?.idFormation || formation?.id || formation?._id;
 
-  if (id) {
-    router.push({ name: 'DetailsFormations', params: { id } });
+  if (!id) {
+    console.error('ID formation introuvable', formation);
+    return;
   }
+
+  router.push(`/formations/${id}`);
 }
 
 onMounted(() => {

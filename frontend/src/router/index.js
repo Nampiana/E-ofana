@@ -53,12 +53,12 @@ const routes = [
       },
       {
         path: "formations/:id",
-        name: "DetailsFormationById",
+        name: "DetailsFormations",
         component: VueDetailsFormations,
       },
       {
         path: "details",
-        name: "DetailsFormations",
+        name: "DetailsLegacy",
         component: VueDetailsFormations,
       },
       {

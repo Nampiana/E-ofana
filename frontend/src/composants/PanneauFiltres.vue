@@ -146,7 +146,18 @@
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue'
+import { defineProps, reactive, watch } from 'vue'
+
+const props = defineProps({
+  categories: {
+    type: Array,
+    default: () => [],
+  },
+  centres: {
+    type: Array,
+    default: () => [],
+  },
+})
 
 const emit = defineEmits(['apply', 'reset'])
 
@@ -160,16 +171,6 @@ const filters = reactive({
   dateDebut: '',
   placesDisponibles: false
 })
-
-const categories = [
-  { id: 'dev', name: 'Développement' },
-  { id: 'design', name: 'Design' },
-  { id: 'marketing', name: 'Marketing Digital' },
-  { id: 'data', name: 'Data Science' },
-  { id: 'business', name: 'Business' },
-  { id: 'langues', name: 'Langues' },
-  { id: 'soft-skills', name: 'Soft Skills' }
-]
 
 const villes = [
   'Antananarivo',
@@ -185,14 +186,6 @@ const durees = [
   { id: 'courte', label: 'Courte (< 1 mois)' },
   { id: 'moyenne', label: 'Moyenne (1-3 mois)' },
   { id: 'longue', label: 'Longue (> 3 mois)' }
-]
-
-const centres = [
-  { id: 1, name: 'E-OFANA Centre Antananarivo' },
-  { id: 2, name: 'E-OFANA Centre Toamasina' },
-  { id: 3, name: 'E-OFANA Centre Antsirabe' },
-  { id: 4, name: 'Tech Academy Madagascar' },
-  { id: 5, name: 'Digital Skills Institute' }
 ]
 
 const applyFilters = () => {

@@ -194,11 +194,14 @@ function rechercher() {
 }
 
 function voirDetail(formation) {
-  const id = formation.id || formation._id;
+  const id = formation.idFormation || formation.id || formation._id;
 
-  if (id) {
-    router.push(`/formations/${id}`);
+  if (!id) {
+    console.error('ID formation introuvable', formation);
+    return;
   }
+
+  router.push(`/formations/${id}`);
 }
 
 onMounted(() => {

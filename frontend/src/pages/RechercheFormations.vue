@@ -17,7 +17,7 @@
 
           <div class="search-field-wrapper" style="min-width: 180px;">
             <span class="material-symbols-outlined search-field-icon">location_on</span>
-            <select v-model="selectedCity" class="form-select search-pill-select">
+            <select v-model="filtres.ville" class="form-select search-pill-select">
               <option value="all">Toutes les villes</option>
               <option value="Antananarivo">Antananarivo</option>
               <option value="Toamasina">Toamasina</option>
@@ -49,33 +49,70 @@
             </div>
 
             <div class="mb-4">
-              <label Sol="cat-select" class="filter-section-title d-block">Catégorie</label>
-              <select 
-                id="cat-select" 
-                v-model="selectedCategory" 
-                class="form-select form-select-sm custom-select-filter"
+              <label class="filter-section-title d-block">Catégories</label>
+              <div v-if="categoriesDisponibles.length === 0" class="text-muted small">Aucune catégorie disponible.</div>
+              <div
+                v-for="categorie in categoriesDisponibles"
+                :key="categorie"
+                class="form-check mb-2"
               >
-                <option value="all">Toutes les catégories</option>
-                <option value="it">Informatique (12)</option>
-                <option value="mgmt">Business &amp; Management (8)</option>
-                <option value="lang">Langues (5)</option>
-                <option value="fin">Finance &amp; Comptabilité (3)</option>
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  :id="`categorie-${categorie}`"
+                  :value="categorie"
+                  v-model="filtres.categories"
+                />
+
+                <label class="form-check-label" :for="`categorie-${categorie}`">
+                  {{ categorie }}
+                </label>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="filter-section-title d-block">Centre de formation</label>
+              <select v-model="filtres.centre" class="form-select">
+                <option value="">Tous les centres</option>
+                <option
+                  v-for="centre in centresDisponibles"
+                  :key="centre"
+                  :value="centre"
+                >
+                  {{ centre }}
+                </option>
               </select>
             </div>
 
             <div class="mb-4">
-              <h3 class="filter-section-title">Prix maximum</h3>
-              <input 
-                v-model.number="maxPrice" 
-                class="form-range" 
-                max="500000" 
-                min="0" 
-                step="50000" 
-                type="range" 
+              <h3 class="filter-section-title">Prix</h3>
+              <div class="d-flex gap-2 mb-2">
+                <input
+                  v-model.number="filtres.prixMin"
+                  type="number"
+                  min="0"
+                  class="form-control form-control-sm"
+                  placeholder="Prix min"
+                />
+                <input
+                  v-model.number="filtres.prixMax"
+                  type="number"
+                  min="0"
+                  class="form-control form-control-sm"
+                  placeholder="Prix max"
+                />
+              </div>
+              <input
+                v-model.number="filtres.prixMax"
+                class="form-range"
+                max="500000"
+                min="0"
+                step="50000"
+                type="range"
               />
               <div class="d-flex justify-content-between text-muted small mt-2">
                 <span>0 Ar</span>
-                <span class="fw-bold text-dark">{{ formatPrice(maxPrice) }} Ar</span>
+                <span class="fw-bold text-dark">{{ formatPrice(filtres.prixMax || 0) }} Ar</span>
               </div>
             </div>
 
@@ -89,10 +126,28 @@
                 <input id="dur-med" v-model="durationFilters.medium" class="form-check-input" type="checkbox" />
                 <label class="form-check-label small" for="dur-med">1 à 3 mois</label>
               </div>
-              <div class="form-check">
+              <div class="form-check mb-3">
                 <input id="dur-long" v-model="durationFilters.long" class="form-check-input" type="checkbox" />
                 <label class="form-check-label small" for="dur-long">&gt; 3 mois</label>
               </div>
+
+              <div class="mb-3">
+                <label class="filter-section-title d-block">Date de début</label>
+                <input
+                  v-model="filtres.dateDebut"
+                  type="date"
+                  class="form-control form-control-sm"
+                />
+              </div>
+
+              <div class="form-check mb-2">
+                <input id="places-disponibles" v-model="filtres.placesDisponibles" class="form-check-input" type="checkbox" />
+                <label class="form-check-label small" for="places-disponibles">Places disponibles uniquement</label>
+              </div>
+            </div>
+
+            <div class="d-grid gap-2 mt-4">
+              <button class="btn btn-dark" @click="handleSearch">Appliquer les filtres</button>
             </div>
           </div>
         </aside>
@@ -100,7 +155,7 @@
         <main class="col-lg-9">
           <div class="d-flex justify-content-between align-items-center mb-4">
             <p class="text-muted small m-0">
-              <span class="fw-bold text-dark">2</span> formations trouvées
+              <span class="fw-bold text-dark">{{ filteredFormations.length }}</span> formations trouvées
             </p>
             <div class="d-flex align-items-center gap-2">
               <label class="small text-muted text-nowrap" for="sort-select">Trier par :</label>
@@ -113,73 +168,54 @@
           </div>
 
           <div class="d-flex flex-column gap-3">
-            
-            <div class="card card-result p-3">
-              <div class="row g-3 align-items-center">
-                <div class="col-md-3">
-                  <div class="result-img-placeholder">
-                    <span class="material-symbols-outlined" style="font-size: 40px; opacity: 0.4">code</span>
-                  </div>
-                </div>
-                <div class="col-md-5">
-                  <span class="badge bg-light text-secondary mb-2" style="font-size: 11px;">Informatique</span>
-                  <h2 class="h5 fw-bold mb-1">Développement Web Full Stack</h2>
-                  <p class="text-muted small mb-3">TechAcademy Antananarivo</p>
-                  <div class="d-flex flex-wrap gap-3 text-muted" style="font-size: 12px;">
-                    <span class="d-flex align-items-center gap-1"><i class="bi bi-geo-alt"></i> Antananarivo</span>
-                    <span class="d-flex align-items-center gap-1"><i class="bi bi-clock"></i> 3 mois</span>
-                    <span class="d-flex align-items-center gap-1"><i class="bi bi-people"></i> 12 places restantes</span>
-                  </div>
-                </div>
-                <div class="col-md-4 text-md-end d-flex flex-md-column justify-content-between align-items-center align-items-md-end mt-3 mt-md-0">
-                  <div>
-                    <p class="h4 fw-bold text-brand-orange mb-0">150 000 Ar</p>
-                    <div class="d-flex align-items-center justify-content-md-end gap-1 small">
-                      <i class="bi bi-star-fill text-brand-gold"></i>
-                      <span class="fw-bold">4.8</span>
-                      <span class="text-muted" style="font-size: 11px;">(47)</span>
+            <div v-if="chargement" class="text-center py-5 text-muted">
+              Chargement des formations...
+            </div>
+
+            <div v-else-if="filteredFormations.length === 0" class="text-center py-5 text-muted">
+              Aucune formation trouvée.
+            </div>
+
+            <div v-else>
+              <div
+                class="card card-result p-3"
+                v-for="formation in filteredFormations"
+                :key="formation.idFormation"
+              >
+                <div class="row g-3 align-items-center">
+                  <div class="col-md-3">
+                    <div class="result-img-placeholder">
+                      <span class="material-symbols-outlined" style="font-size: 40px; opacity: 0.4">code</span>
                     </div>
                   </div>
-                  <button class="btn btn-dark fw-semibold px-4 py-2 mt-md-4" @click="goToDetail(1)">
-                    Voir détail
-                  </button>
+                  <div class="col-md-5">
+                    <span class="badge bg-light text-secondary mb-2" style="font-size: 11px;">
+                      {{ formation.categorie || 'Sans catégorie' }}
+                    </span>
+                    <h2 class="h5 fw-bold mb-1">{{ formation.titre }}</h2>
+                    <p class="text-muted small mb-3">{{ formation.centre || formation.nomCentre || formation.ecole || 'Centre inconnu' }}</p>
+                    <div class="d-flex flex-wrap gap-3 text-muted" style="font-size: 12px;">
+                      <span class="d-flex align-items-center gap-1"><i class="bi bi-geo-alt"></i> {{ formation.ville || formation.lieu || 'Lieu inconnu' }}</span>
+                      <span class="d-flex align-items-center gap-1"><i class="bi bi-clock"></i> {{ formation.duree || 'Durée inconnue' }}</span>
+                      <span class="d-flex align-items-center gap-1"><i class="bi bi-people"></i> {{ formation.placesDisponibles || formation.placesRestantes || 0 }} places restantes</span>
+                    </div>
+                  </div>
+                  <div class="col-md-4 text-md-end d-flex flex-md-column justify-content-between align-items-center align-items-md-end mt-3 mt-md-0">
+                    <div>
+                      <p class="h4 fw-bold text-brand-orange mb-0">{{ formatPrice(formation.prixRemise || formation.prix) }} Ar</p>
+                      <div class="d-flex align-items-center justify-content-md-end gap-1 small">
+                        <i class="bi bi-star-fill text-brand-gold"></i>
+                        <span class="fw-bold">{{ formation.noteMoyenne ?? 0 }}</span>
+                        <span class="text-muted" style="font-size: 11px;">({{ formation.nbAvis ?? 0 }})</span>
+                      </div>
+                    </div>
+                    <button class="btn btn-dark fw-semibold px-4 py-2 mt-md-4" @click="goToDetail(formation.idFormation)">
+                      Voir détail
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-
-            <div class="card card-result p-3">
-              <div class="row g-3 align-items-center">
-                <div class="col-md-3">
-                  <div class="result-img-placeholder orange">
-                    <span class="material-symbols-outlined" style="font-size: 40px; opacity: 0.4">leaderboard</span>
-                  </div>
-                </div>
-                <div class="col-md-5">
-                  <span class="badge bg-light text-secondary mb-2" style="font-size: 11px;">Business &amp; Management</span>
-                  <h2 class="h5 fw-bold mb-1">Comptabilité &amp; Gestion d'Entreprise</h2>
-                  <p class="text-muted small mb-3">ISCAM Formation</p>
-                  <div class="d-flex flex-wrap gap-3 text-muted" style="font-size: 12px;">
-                    <span class="d-flex align-items-center gap-1"><i class="bi bi-geo-alt"></i> Toamasina</span>
-                    <span class="d-flex align-items-center gap-1"><i class="bi bi-clock"></i> 4 mois</span>
-                    <span class="d-flex align-items-center gap-1"><i class="bi bi-people"></i> 5 places restantes</span>
-                  </div>
-                </div>
-                <div class="col-md-4 text-md-end d-flex flex-md-column justify-content-between align-items-center align-items-md-end mt-3 mt-md-0">
-                  <div>
-                    <p class="h4 fw-bold text-brand-orange mb-0">120 000 Ar</p>
-                    <div class="d-flex align-items-center justify-content-md-end gap-1 small">
-                      <i class="bi bi-star-fill text-brand-gold"></i>
-                      <span class="fw-bold">4.9</span>
-                      <span class="text-muted" style="font-size: 11px;">(134)</span>
-                    </div>
-                  </div>
-                  <button class="btn btn-dark fw-semibold px-4 py-2 mt-md-4" @click="goToDetail(2)">
-                    Voir détail
-                  </button>
-                </div>
-              </div>
-            </div>
-
           </div>
         </main>
 
@@ -189,40 +225,192 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { obtenirFormations } from '../api/formations.js'
 
-// Données réactives formulaires et filtres
-const searchQuery = ref('Développement Web')
-const selectedCity = ref('Antananarivo')
-const selectedCategory = ref('it')
-const maxPrice = ref(250000)
+const router = useRouter()
+
+const searchQuery = ref('')
+const filtres = reactive({
+  categories: [],
+  ville: '',
+  prixMin: '',
+  prixMax: '',
+  duree: '',
+  centre: '',
+  dateDebut: '',
+  placesDisponibles: false
+})
 const sortBy = ref('relevant')
-
 const durationFilters = reactive({
   short: false,
-  medium: true,
+  medium: false,
   long: false
 })
+const formations = ref([])
+const chargement = ref(false)
 
-// Fonctions / Actions
+const categoriesDisponibles = computed(() => {
+  return [
+    ...new Set(
+      formations.value
+        .map((formation) => formation.categorie)
+        .filter(Boolean)
+    )
+  ]
+})
+
+const centresDisponibles = computed(() => {
+  return [
+    ...new Set(
+      formations.value
+        .map((formation) => formation.centre || formation.nomCentre || formation.ecole)
+        .filter(Boolean)
+    )
+  ]
+})
+
+const filteredFormations = computed(() => {
+  let result = [...formations.value]
+  const query = searchQuery.value?.trim().toLowerCase() || ''
+
+  if (query) {
+    result = result.filter((formation) => {
+      return [
+        formation.titre,
+        formation.description,
+        formation.categorie,
+        formation.centre,
+        formation.ville,
+        formation.lieu
+      ]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query))
+    })
+  }
+
+  if (filtres.categories.length > 0) {
+    result = result.filter(
+      (formation) => formation.categorie && filtres.categories.includes(formation.categorie)
+    )
+  }
+
+  if (filtres.ville && filtres.ville !== 'all') {
+    result = result.filter((formation) => {
+      const ville = (formation.ville || formation.lieu || '').toLowerCase()
+      return ville.includes(filtres.ville.toLowerCase())
+    })
+  }
+
+  if (filtres.centre) {
+    result = result.filter((formation) => {
+      const centre = (formation.centre || formation.nomCentre || formation.ecole || '').toLowerCase()
+      return centre.includes(filtres.centre.toLowerCase())
+    })
+  }
+
+  if (filtres.prixMin !== '') {
+    result = result.filter((formation) => Number(formation.prix || 0) >= Number(filtres.prixMin))
+  }
+
+  if (filtres.prixMax !== '') {
+    result = result.filter((formation) => Number(formation.prix || 0) <= Number(filtres.prixMax))
+  }
+
+  const anyDurationSelected = durationFilters.short || durationFilters.medium || durationFilters.long
+  if (anyDurationSelected) {
+    result = result.filter((formation) => {
+      const months = getMonthsFromDuree(formation.duree)
+      if (months === null) {
+        return true
+      }
+
+      if (durationFilters.short && months < 1) return true
+      if (durationFilters.medium && months >= 1 && months <= 3) return true
+      if (durationFilters.long && months > 3) return true
+
+      return false
+    })
+  }
+
+  if (filtres.dateDebut) {
+    result = result.filter((formation) => {
+      return formation.dateDebut && formation.dateDebut.startsWith(filtres.dateDebut)
+    })
+  }
+
+  if (filtres.placesDisponibles) {
+    result = result.filter((formation) => Number(formation.placesDisponibles || formation.placesRestantes || 0) > 0)
+  }
+
+  switch (sortBy.value) {
+    case 'price-asc':
+      return result.sort((a, b) => Number(a.prix || 0) - Number(b.prix || 0))
+    case 'price-desc':
+      return result.sort((a, b) => Number(b.prix || 0) - Number(a.prix || 0))
+    default:
+      return result
+  }
+})
+
+const loadFormations = async () => {
+  chargement.value = true
+
+  try {
+    formations.value = await obtenirFormations()
+  } catch (error) {
+    console.error('Impossible de charger les formations', error)
+    formations.value = []
+  } finally {
+    chargement.value = false
+  }
+}
+
+onMounted(loadFormations)
+
 const handleSearch = () => {
-  console.log('Recherche lancée pour :', searchQuery.value, 'à', selectedCity.value)
+  // Les filtres sont appliqués automatiquement via filteredFormations
 }
 
 const clearFilters = () => {
-  selectedCategory.value = 'all'
-  maxPrice.value = 500000
+  searchQuery.value = ''
+  filtres.categories = []
+  filtres.ville = ''
+  filtres.prixMin = ''
+  filtres.prixMax = ''
+  filtres.duree = ''
+  filtres.centre = ''
+  filtres.dateDebut = ''
+  filtres.placesDisponibles = false
   durationFilters.short = false
   durationFilters.medium = false
   durationFilters.long = false
+  sortBy.value = 'relevant'
 }
 
 const formatPrice = (value) => {
-  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+  return Number(value || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+}
+
+const getMonthsFromDuree = (duree) => {
+  if (!duree) return null
+
+  const mois = String(duree).match(/(\d+)\s*mois?/i)
+  if (mois) {
+    return Number(mois[1])
+  }
+
+  const semaines = String(duree).match(/(\d+)\s*semaines?/i)
+  if (semaines) {
+    return Number(semaines[1]) / 4
+  }
+
+  return null
 }
 
 const goToDetail = (id) => {
-  console.log(`Navigation vers le détail de la formation ID: ${id}`)
+  router.push(`/formations/${id}`)
 }
 </script>
 

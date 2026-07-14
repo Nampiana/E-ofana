@@ -27,7 +27,12 @@
         <div class="row">
           <!-- Filtres -->
           <div class="col-lg-3 mb-4">
-            <PanneauFiltres @apply="handleApplyFilters" @reset="handleResetFilters" />
+            <PanneauFiltres
+              :categories="categoriesDisponibles"
+              :centres="centresDisponibles"
+              @apply="handleApplyFilters"
+              @reset="handleResetFilters"
+            />
           </div>
 
           <!-- Résultats -->
@@ -181,6 +186,7 @@ const resultsPerPage = 10;
 const activeFilters = ref({});
 const results = ref([]);
 const allResults = ref([]);
+const formations = allResults;
 const loading = ref(false);
 
 const getCategoryKey = (category) => {
@@ -256,6 +262,31 @@ const visiblePages = computed(() => {
   }
 
   return pages;
+});
+
+const categoriesDisponibles = computed(() => {
+  const map = new Map();
+
+  formations.value.forEach((formation) => {
+    const category = formation.category || formation.categorie || "";
+    const key = getCategoryKey(category);
+
+    if (category && key && !map.has(key)) {
+      map.set(key, { id: key, name: category });
+    }
+  });
+
+  return Array.from(map.values());
+});
+
+const centresDisponibles = computed(() => {
+  return Array.from(
+    new Set(
+      formations.value
+        .map((formation) => formation.centre || formation.nomCentre || formation.ecole)
+        .filter(Boolean)
+    )
+  ).map((centre) => ({ id: centre, name: centre }));
 });
 
 const formatPrice = (price) => {
