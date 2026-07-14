@@ -232,4 +232,61 @@ public class FormateurSupportController {
 
         return null;
     }
+    @GetMapping("/api/v1/formateurs/inscrits")
+public ResponseEntity<?> getInscritsFormation(@RequestParam Long formationId) {
+    List<Map<String, Object>> inscrits = jdbcTemplate.queryForList("""
+        SELECT
+            i."idInscription" AS "idInscription",
+            u.nom AS nom,
+            u.prenom AS prenom,
+            u.email AS email,
+            i.statut AS statut,
+            i."typeInsc" AS "typeInsc",
+            i."montantPaye" AS "montantPaye",
+            i."montantFormateur" AS "montantFormateur",
+            i."createdAt" AS "createdAt"
+        FROM eofana.inscriptions i
+        JOIN eofana.utilisateurs u ON u."idUser" = i."idUser"
+        JOIN eofana."sessionsFormation" s ON s."idSession" = i."idSession"
+        WHERE s."idFormation" = ?
+        ORDER BY i."createdAt" DESC
+    """, formationId);
+
+    return ResponseEntity.ok(inscrits);
+}
+
+@DeleteMapping("/api/v1/formations/{id}")
+public ResponseEntity<?> supprimerFormation(@PathVariable Long id) {
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+        jdbcTemplate.update("""
+            DELETE FROM eofana.inscriptions
+            WHERE "idSession" IN (
+                SELECT "idSession"
+                FROM eofana."sessionsFormation"
+                WHERE "idFormation" = ?
+            )
+        """, id);
+
+        jdbcTemplate.update("""
+            DELETE FROM eofana."sessionsFormation"
+            WHERE "idFormation" = ?
+        """, id);
+
+        int deleted = jdbcTemplate.update("""
+            DELETE FROM eofana.formations
+            WHERE "idFormation" = ?
+        """, id);
+
+        response.put("success", deleted > 0);
+        response.put("message", deleted > 0 ? "Formation supprimée" : "Formation introuvable");
+
+        return ResponseEntity.ok(response);
+    } catch (Exception e) {
+        response.put("success", false);
+        response.put("message", "Suppression impossible : " + e.getMessage());
+        return ResponseEntity.status(500).body(response);
+    }
+}
 }
